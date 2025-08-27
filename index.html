@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRAFT INFO</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --panel:#ffffff; --border:#e5e7eb; --text:#111827;
+      --muted:#6b7280; --title:#0f172a; --radius:12px;
+      --shadow:0 2px 10px rgba(0,0,0,.06); --gap:16px; --side-w:260px;
+      --blue:#2563eb; --red:#e11d48; --sel-ring: rgba(59,130,246,.18);
+      --icon:28px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+      line-height:1.5;
+    }
+    .app-header{padding:24px 20px;font-size:28px;font-weight:800;letter-spacing:.5px;color:var(--title);}
+
+    .app{
+      max-width:1200px;margin:0 auto 40px;padding:0 20px 20px;display:grid;
+      grid-template-columns: var(--side-w) 450px 1fr; gap:var(--gap);
+    }
+    .panel{
+      background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+      box-shadow:var(--shadow);min-height:400px;display:flex;flex-direction:column;overflow:hidden;
+    }
+
+    /* === 타이틀: 라인 맞춤 + 더 회색 배경 === */
+    .panel__title{
+      height:46px; padding:0 12px;
+      border-bottom:1px solid #e2e8f0;
+      font-weight:700; background:#f3f4f6;
+      display:flex; align-items:center; gap:10px;
+    }
+    .panel__title .title-text{flex:0 0 auto;}
+    .panel__title .title-right{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0;overflow:visible;}
+
+    .panel__body{padding:16px;color:var(--muted);}
+    @media (max-width:900px){ .app{grid-template-columns:1fr;} }
+
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .panel__footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);background:#fff;}
+
+    .input-row{display:flex;gap:8px;}
+    .input{flex:1 1 auto;min-width:0;height:36px;padding:0 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;}
+    .btn{flex:0 0 auto;height:36px;padding:0 14px;border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;text-align:center;}
+    .btn-outline{border:1px solid var(--red);background:#fff;color:var(--red);height:30px;padding:0 10px;border-radius:8px;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+
+    .player-empty{color:var(--muted);font-size:14px;}
+    .player-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+    .player-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;color:#111827;cursor:pointer;}
+    .player-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;font-size:14px;font-weight:600;}
+    .player-item.selected{border-color:#93c5fd;box-shadow:0 0 0 3px var(--sel-ring);}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    .list{display:flex;flex-direction:column;gap:8px;}
+    .card{
+      display:flex;align-items:center;gap:8px;padding:4px 4px;
+      border:1px solid var(--border);border-radius:8px;background:#f9fafb;white-space:nowrap;
+      transition:background .15s,border-color .15s,box-shadow .15s;
+    }
+    .card:hover{background:#f3f4f6;border-color:#d1d5db;}
+    .card img{width:var(--icon);height:var(--icon);object-fit:contain;}
+    .card .info{font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;padding-block: 1px;}
+    .badge{display:inline-block;padding:2px 6px;border-radius:6px;border:1px solid #d1d5db;background:#fff;font-size:11px;color:#334155}
+
+    .card.selected{ border-color:#93c5fd; box-shadow:0 0 0 3px var(--sel-ring); background:#eef6ff; }
+
+    /* 체크 완료 시 스타일 */
+    .card.checked .info{ color:#9aa3af; text-decoration:line-through; }
+    .card.checked{ background:#f1f5f9; border-color:#d1d5db; opacity:.85; }
+
+    .chip{
+      display:flex; align-items:center; gap:8px; padding:4px 8px;
+      border:1px solid var(--border); border-radius:8px; background:#f9fafb;
+      white-space:nowrap;  /* 칩 안에서 줄바꿈 금지 */
+    }
+    .chip img{width:var(--icon);height:var(--icon);object-fit:contain;}
+    .chip .name{font-size:12px;white-space:nowrap;line-height: 1.25;padding-block: 1px;}
+
+    /* 수량 입력: 항상 인풋처럼 보이게 + 한 줄 유지 */
+    .qty-wrap{display:flex; align-items:center; gap:6px; white-space:nowrap;}
+    .qty-label{font-size:12px; color:#475569; white-space:nowrap;}
+    .qty-field{
+      width:60px; height:28px; font-size:14px; padding:0 6px;
+      border:1px solid var(--border); border-radius:6px; background:#fff;
+      outline:none; transition:border-color .15s, box-shadow .15s, background .15s;
+    }
+    .qty-field[readonly]{ background:#f8fafc; cursor:text; }
+    .qty-field:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px var(--sel-ring); }
+
+    .muted{color:#6b7280}
+    .small-note{font-size:12px;color:#6b7280;white-space:nowrap;}
+
+    .need-static .card{cursor:default;}
+    .need-static .card:hover{background:#f9fafb;border-color:var(--border);}
+  </style>
+</head>
+<body>
+<script>
+  /* ===== 데이터 ===== */
+  const PRODUCTS = ["STR 보석 II","AGI 보석 II","INT 보석 II","VIT 보석 II","LUK 보석 II","DEX 보석 II"];
+
+  const RECIPES = [
+    { product:"STR 보석 II", materials:[ {name:"순수한 보석 광석 Lv.2",qty:30},{name:"채찍 물고기",qty:12} ] },
+    { product:"AGI 보석 II", materials:[ {name:"혼돈의 보석 광석 Lv.2",qty:30},{name:"톱니 비늘 물고기",qty:12} ] },
+    { product:"INT 보석 II", materials:[ {name:"순수한 보석 광석 Lv.2",qty:30},{name:"무지개 산호",qty:12} ] },
+    { product:"VIT 보석 II", materials:[ {name:"혼돈의 보석 광석 Lv.2",qty:30},{name:"채찍 물고기",qty:12} ] },
+    { product:"LUK 보석 II", materials:[ {name:"순수한 보석 광석 Lv.2",qty:30},{name:"톱니 비늘 물고기",qty:12} ] },
+    { product:"DEX 보석 II", materials:[ {name:"혼돈의 보석 광석 Lv.2",qty:30},{name:"무지개 산호",qty:12} ] },
+  ];
+
+  const DEFAULT_QTY = {};
+  const RecipeMap = Object.fromEntries(RECIPES.map(r=>[r.product,r.materials]));
+
+  /* ===== 상태/스토리지 ===== */
+  window.AppState={
+    players:[],nextId:1,selectedPlayerId:null,selectedProduct:null,
+    playerSelections:{},playerProductQty:{},
+    playerChecked:{},      // { [playerId]: { [product]: { [nodeName]: true } } }
+    currentTree:null
+  };
+  const KEY_PLAYERS='craftinfo.players';
+  const KEY_LAST_PLAYER='craftinfo.lastPlayerId';
+  const KEY_PLAYER_SELECTIONS='craftinfo.playerSelections';
+  const KEY_PLAYER_PRODUCT_QTY='craftinfo.playerProductQty';
+  const KEY_PLAYER_CHECKED='craftinfo.playerChecked';
+
+  const savePlayers=()=>localStorage.setItem(KEY_PLAYERS,JSON.stringify(AppState.players));
+  const saveLastPlayer=()=>localStorage.setItem(KEY_LAST_PLAYER,JSON.stringify(AppState.selectedPlayerId));
+  const savePlayerSelections=()=>localStorage.setItem(KEY_PLAYER_SELECTIONS,JSON.stringify(AppState.playerSelections));
+  const savePlayerProductQty=()=>localStorage.setItem(KEY_PLAYER_PRODUCT_QTY,JSON.stringify(AppState.playerProductQty));
+  const savePlayerChecked=()=>localStorage.setItem(KEY_PLAYER_CHECKED,JSON.stringify(AppState.playerChecked));
+
+  function loadAll(){try{
+    AppState.players=JSON.parse(localStorage.getItem(KEY_PLAYERS)??'[]');
+    AppState.nextId=AppState.players.length?Math.max(...AppState.players.map(p=>p.id))+1:1;
+    const last=JSON.parse(localStorage.getItem(KEY_LAST_PLAYER)??'null');
+    if(typeof last==='number') AppState.selectedPlayerId=last;
+    AppState.playerSelections=JSON.parse(localStorage.getItem(KEY_PLAYER_SELECTIONS)??'{}')||{};
+    AppState.playerProductQty=JSON.parse(localStorage.getItem(KEY_PLAYER_PRODUCT_QTY)??'{}')||{};
+    AppState.playerChecked=JSON.parse(localStorage.getItem(KEY_PLAYER_CHECKED)??'{}')||{};
+  }catch(e){console.warn('로드 실패',e)}}
+
+  function getQtyForPlayerProduct(playerId,productName){
+    const stored=AppState.playerProductQty[playerId]?.[productName];
+    if(stored!=null) return Math.max(0,parseInt(stored,10)||0);
+    const def=DEFAULT_QTY[productName];
+    return Math.max(0,parseInt(def??1,10)||1);
+  }
+  function setQtyForPlayerProduct(playerId,productName,qty){
+    if(playerId==null) return;
+    if(!AppState.playerProductQty[playerId]) AppState.playerProductQty[playerId]={};
+    AppState.playerProductQty[playerId][productName]=Math.max(0,parseInt(qty??1,10)||1);
+    savePlayerProductQty();
+  }
+
+  /* === 체크 상태 헬퍼 === */
+  function getCheckedMap(playerId, product){
+    if(!AppState.playerChecked[playerId]) AppState.playerChecked[playerId] = {};
+    if(!AppState.playerChecked[playerId][product]) AppState.playerChecked[playerId][product] = {};
+    return AppState.playerChecked[playerId][product];
+  }
+  function setChecked(playerId, product, nodeName, value){
+    const map = getCheckedMap(playerId, product);
+    if(value) map[nodeName] = true;
+    else delete map[nodeName];
+    savePlayerChecked();
+  }
+
+  /* ===== 플레이어 ===== */
+  function renderPlayers(){
+    const list=document.getElementById('playerList'),empty=document.getElementById('playerEmpty');
+    list.innerHTML='';
+    if(!AppState.players.length){empty.hidden=false;list.hidden=true;return;}
+    empty.hidden=true;list.hidden=false;
+    for(const p of AppState.players){
+      const li=document.createElement('li'); li.className='player-item'; li.dataset.id=String(p.id);
+      if(AppState.selectedPlayerId===p.id) li.classList.add('selected');
+      const name=document.createElement('span'); name.className='player-name'; name.textContent=p.name;
+      const del=document.createElement('button'); del.className='btn-outline'; del.textContent='삭제';
+      del.addEventListener('click',ev=>{ev.stopPropagation(); removePlayer(p.id);});
+      li.addEventListener('click',()=>selectPlayer(p.id));
+      li.append(name,del); list.appendChild(li);
+    }
+  }
+  function addPlayer(name){const n=(name||'').trim(); if(!n) return; AppState.players.push({id:AppState.nextId++,name:n}); savePlayers(); renderPlayers();}
+  function removePlayer(id){
+    AppState.players=AppState.players.filter(p=>p.id!==id);
+    delete AppState.playerSelections[id]; delete AppState.playerProductQty[id]; delete AppState.playerChecked[id];
+    savePlayers(); savePlayerSelections(); savePlayerProductQty(); savePlayerChecked();
+    if(AppState.selectedPlayerId===id){AppState.selectedPlayerId=null; saveLastPlayer(); AppState.selectedProduct=null; renderNeedPanel(); loadProducts();}
+    renderPlayers();
+  }
+  function selectPlayer(id){
+    if(!AppState.players.some(p=>p.id===id)) return;
+    AppState.selectedPlayerId=id; saveLastPlayer(); renderPlayers();
+    const sel=AppState.playerSelections[id];
+    if(sel&&sel.name){const q=getQtyForPlayerProduct(id,sel.name); AppState.selectedProduct={name:sel.name,qty:q};}
+    else AppState.selectedProduct=null;
+    renderNeedPanel(); loadProducts(); updateNeedTitleChip();
+  }
+
+  /* ===== 제품 목록 (캐릭터 없으면 안내) ===== */
+  function loadProducts(){
+    const grid=document.getElementById('productGrid');
+    grid.innerHTML='';
+
+    if(AppState.selectedPlayerId==null){
+      const p=document.createElement('p');
+      p.className='small-note muted';
+      p.textContent='먼저 캐릭터를 선택해 주세요.';
+      grid.appendChild(p);
+      return;
+    }
+
+    const selectedName = AppState.selectedProduct?.name || null;
+
+    for(const line of PRODUCTS){
+      const card=document.createElement('div'); card.className='card'; card.dataset.product=line;
+      if(selectedName && line===selectedName){ card.classList.add('selected'); }
+      const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(line)+'.png'; img.alt=line;
+      const info=document.createElement('span'); info.className='info'; info.textContent=line;
+      card.append(img,info);
+
+      card.addEventListener('click',()=>{
+        let qty=1; if(AppState.selectedPlayerId!=null) qty=getQtyForPlayerProduct(AppState.selectedPlayerId,line);
+        AppState.selectedProduct={name:line,qty};
+        if(AppState.selectedPlayerId!=null){
+          AppState.playerSelections[AppState.selectedPlayerId]={name:line,qty};
+          savePlayerSelections();
+        }
+        renderNeedPanel(); loadProducts(); updateNeedTitleChip();
+      });
+      grid.appendChild(card);
+    }
+  }
+
+  function renderSelectedInTitle(){ document.getElementById('productTitleRight').innerHTML=''; }
+
+  /* ===== 필요재료 타이틀 오른쪽 칩 (여기서 수량 편집) ===== */
+  function updateNeedTitleChip(){
+    const host=document.getElementById('needTitleRight'); host.innerHTML='';
+    const sel=AppState.selectedProduct; if(!sel) return;
+
+    const chip=document.createElement('div'); chip.className='chip';
+    const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(sel.name)+'.png'; img.alt=sel.name;
+    const nm=document.createElement('span'); nm.className='name'; nm.textContent=sel.name;
+
+    // 수량(라벨+인풋)을 한 줄로 묶어서 줄바꿈 방지
+    const qtyWrap=document.createElement('div');
+    qtyWrap.className='qty-wrap';
+
+    const label=document.createElement('span');
+    label.className='qty-label';
+    label.textContent='수량';
+
+    const input=document.createElement('input');
+    input.type='number'; input.min='0'; input.step='1';
+    input.value=String(sel.qty);
+    input.className='qty-field';
+    input.readOnly = true;
+
+    const startEdit = () => { input.readOnly = false; input.focus(); input.select(); };
+    const commit = () => {
+      let v = Math.max(0, parseInt(input.value || '0', 10));
+      input.value = String(v);
+      input.readOnly = true;
+
+      if(AppState.selectedPlayerId!=null){
+        setQtyForPlayerProduct(AppState.selectedPlayerId, sel.name, v);
+        AppState.playerSelections[AppState.selectedPlayerId]={name:sel.name, qty:v};
+        savePlayerSelections();
+      }
+      AppState.selectedProduct.qty=v;
+      renderNeedPanel();
+      updateNeedTitleChip();
+    };
+
+    let committed = false;
+
+input.addEventListener('click', startEdit);
+input.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    // Enter에서는 commit을 직접 호출하지 않고, blur만 유도
+    input.blur();
+  }else if(e.key==='Escape'){
+    input.value = String(sel.qty);
+    input.readOnly = true;
+    input.blur();
+  }
+});
+
+input.addEventListener('blur', ()=>{
+  if (committed) return;     // 재진입 가드
+  committed = true;
+  commit();
+  // 다음 편집을 위해 플래그 원복
+  setTimeout(()=>{ committed = false; }, 0);
+});
+
+    qtyWrap.append(label,input);
+    chip.append(img, nm, qtyWrap);
+    host.appendChild(chip);
+  }
+
+  /* ===== 트리 유틸 ===== */
+  function buildTreeContext(rootProduct){
+    const childrenMap = {};
+    const parentMap = {};
+    const visit = (name) => {
+      const children = RecipeMap[name] || [];
+      childrenMap[name] = children.map(c=>({name:c.name, qty:Math.max(1,parseInt(c.qty??1,10))}));
+      for(const c of children){
+        if(!parentMap[c.name]) parentMap[c.name] = new Set();
+        parentMap[c.name].add(name);
+        if(!childrenMap[c.name]) visit(c.name);
+      }
+    };
+    visit(rootProduct);
+    return {childrenMap, parentMap};
+  }
+  function getAllDescendants(name, childrenMap){
+    const out = [], stack = [name];
+    while(stack.length){
+      const cur = stack.pop();
+      const ch = childrenMap[cur]||[];
+      for(const c of ch){ out.push(c.name); stack.push(c.name); }
+    }
+    return out;
+  }
+  function areAllChildrenChecked(name, checkedMap, childrenMap){
+    const ch = childrenMap[name]||[];
+    if(ch.length===0) return true;
+    return ch.every(c => checkedMap[c.name]);
+  }
+
+  /* ===== 필요 재료 (체크박스 + 연동) ===== */
+  function renderNeedPanel(){
+    const box=document.getElementById('needBox'); box.innerHTML='';
+    const sel=AppState.selectedProduct;
+
+    if(AppState.selectedPlayerId==null){
+      const p=document.createElement('p'); p.className='muted small-note'; p.textContent='먼저 캐릭터를 선택해 주세요.'; box.appendChild(p); return;
+    }
+
+    updateNeedTitleChip();
+
+    if(!sel){
+      const p=document.createElement('p'); p.className='muted small-note'; p.textContent='완제품을 선택하면 필요한 재료가 표시됩니다.'; box.appendChild(p); return;
+    }
+
+    const ctx = buildTreeContext(sel.name);
+    AppState.currentTree = ctx;
+
+    const list=document.createElement('div'); list.className='list need-static';
+    const mats=RecipeMap[sel.name]||[];
+    if(!mats.length){ const p=document.createElement('p'); p.className='small-note'; p.textContent='레시피가 없습니다. (RECIPES 배열을 추가하세요)'; box.appendChild(p); return; }
+
+    const playerId = AppState.selectedPlayerId;
+    const product = sel.name;
+    const checkedMap = getCheckedMap(playerId??'__noPlayer__', product);
+
+    const toggleWithPropagation = (nodeName, value)=>{
+      const {childrenMap, parentMap} = AppState.currentTree;
+      const pid = AppState.selectedPlayerId ?? '__noPlayer__';
+      const prod = AppState.selectedProduct?.name ?? '';
+
+      setChecked(pid, prod, nodeName, value);
+      const desc = getAllDescendants(nodeName, childrenMap);
+      for(const d of desc) setChecked(pid, prod, d, value);
+
+      const queue = [...(parentMap[nodeName]??[])];
+      while(queue.length){
+        const parent = queue.shift();
+        if(value){
+          const all = areAllChildrenChecked(parent, getCheckedMap(pid, prod), childrenMap);
+          if(all){ setChecked(pid, prod, parent, true); }
+        }else{
+          setChecked(pid, prod, parent, false);
+        }
+        for(const pp of (parentMap[parent]??[])) queue.push(pp);
+      }
+      renderNeedPanel();
+    };
+
+    const renderNode=(nodeName,perEach,multiplier,depth)=>{
+      const total=perEach*multiplier;
+      const card=document.createElement('div'); card.className='card'; card.dataset.material=nodeName;
+      card.style.marginLeft=`${Math.min(depth,6)*16}px`;
+      if(checkedMap[nodeName]) card.classList.add('checked');
+
+      const checkbox = document.createElement('input');
+      checkbox.type='checkbox';
+      checkbox.checked = !!checkedMap[nodeName];
+      checkbox.addEventListener('change',()=>toggleWithPropagation(nodeName, checkbox.checked));
+
+      const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(nodeName)+'.png'; img.alt=nodeName;
+      const info=document.createElement('span'); info.className='info'; info.textContent=nodeName;
+      const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`총 ${total}`;
+      card.append(checkbox,img,info,badge); list.appendChild(card);
+
+      const children=RecipeMap[nodeName];
+      if(children&&children.length){
+        for(const c of children){ renderNode(c.name, Math.max(1,parseInt(c.qty??1,10)), total, depth+1); }
+      }
+    };
+
+    const qty = Math.max(0, parseInt(sel.qty ?? 0, 10));
+    for(const m of mats){ renderNode(m.name, Math.max(1,parseInt(m.qty??1,10)), qty, 0); }
+
+    box.appendChild(list);
+  }
+
+  /* ===== 초기화 ===== */
+  window.addEventListener('DOMContentLoaded', ()=>{
+    loadAll(); loadProducts(); renderPlayers();
+    if(AppState.selectedPlayerId!=null) selectPlayer(AppState.selectedPlayerId);
+    else { renderSelectedInTitle(); renderNeedPanel(); }
+    const input=document.getElementById('player-name'); const addBtn=document.querySelector('.btn');
+    addBtn.addEventListener('click',()=>{ addPlayer(input.value); input.value=''; input.focus(); });
+    input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ addPlayer(input.value); input.value=''; } });
+  });
+</script>
+
+<header class="app-header">CRAFT INFO</header>
+
+<main class="app">
+  <!-- 왼쪽: 플레이어 -->
+  <section class="panel" aria-labelledby="player-title">
+    <div class="panel__title" id="player-title"><span class="title-text">플레이어</span></div>
+    <div class="panel__body">
+      <div id="playerListContainer">
+        <p class="player-empty" id="playerEmpty">플레이어가 없습니다. 아래에서 추가해 주세요.</p>
+        <ul class="player-list" id="playerList" hidden></ul>
+      </div>
+    </div>
+    <div class="panel__footer">
+      <label for="player-name" class="sr-only">플레이어 이름</label>
+      <div class="input-row">
+        <input id="player-name" type="text" placeholder="플레이어명" class="input"/>
+        <button type="button" class="btn">추가</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 가운데: 완제품 -->
+  <section class="panel" aria-labelledby="product-title">
+    <div class="panel__title" id="product-title">
+      <span class="title-text">완제품</span>
+      <span class="title-right" id="productTitleRight"></span>
+    </div>
+    <div class="panel__body">
+      <div class="grid" id="productGrid"></div>
+    </div>
+  </section>
+
+  <!-- 오른쪽: 필요재료 -->
+  <section class="panel" aria-labelledby="need-title">
+    <div class="panel__title" id="need-title">
+      <span class="title-text">필요재료</span>
+      <span class="title-right" id="needTitleRight"></span>
+    </div>
+    <div class="panel__body">
+      <div id="needBox"></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
