@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>OX 족보</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#fff; --border:#e5e7eb; --text:#111827;
+    --muted:#6b7280; --title:#0f172a; --radius:16px; --shadow:0 2px 10px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  .wrap{ max-width:720px; margin:40px auto; padding:0 16px; }
+  h1{ text-align:center; font-size:22px; color:var(--title); margin:0 0 12px; }
+  .meta{ text-align:center; color:var(--muted); font-size:12px; margin-bottom:12px; }
+
+  /* 검색 상자 */
+  .search{ position:relative; display:flex; align-items:center; gap:8px; }
+  .search .box{
+    position:relative; display:flex; align-items:center;
+    background:#f1f5f9; border:1px solid var(--border); border-radius:10px;
+    padding:6px 36px 6px 10px; height:40px; flex:1;
+  }
+  .search input{
+    border:0; outline:none; background:transparent; width:100%;
+    font-size:14px; color:var(--text);
+  }
+  .clear-btn{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:28px; height:26px; border:0; background:#e5e7eb; border-radius:6px; cursor:pointer; font-weight:700;
+  }
+  .clear-btn:hover{ background:#d1d5db; }
+  .count{ font-size:12px; color:var(--muted); }
+
+  /* 리스트 카드 */
+  .card{
+    margin-top:18px; background:var(--panel); border:1px solid var(--border);
+    border-radius:24px; box-shadow:var(--shadow); padding:22px 18px;
+  }
+  ul{ list-style:none; padding:0; margin:0; }
+  li{ display:flex; align-items:center; gap:10px; padding:10px 6px; border-radius:10px; }
+  li + li{ border-top:1px dashed var(--border); }
+  .q{ flex:1; line-height:1.6; }
+  .badge{ min-width:34px; text-align:center; font-weight:700; padding:4px 10px; border-radius:999px; border:1px solid var(--border); }
+  .o{ color:#059669; background:#ecfdf5; border-color:#a7f3d0; }
+  .x{ color:#dc2626; background:#fef2f2; border-color:#fecaca; }
+  .empty{ color:var(--muted); padding:20px 6px; text-align:center; }
+  mark{ background:#fff3a3; padding:0 2px; border-radius:4px; }
+  .credit{
+    margin:14px 2px 0;
+    padding:10px 12px;
+    font-size:12px;
+    color:var(--muted);
+    border:1px dashed var(--border);
+    border-radius:12px;
+    text-align:center;
+  }
+  .credit a{ color:#2563eb; text-decoration:none; }
+  .credit a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>OX 족보</h1>
+    <div class="meta">검색어는 띄어쓰기로 여러 개 입력 가능</div>
+
+    <div class="search" aria-label="족보 검색">
+      <div class="box">
+        <input id="keyword" type="text" placeholder="예: AGI FLEE" autocomplete="off" />
+        <button id="clear" class="clear-btn" title="초기화">X</button>
+      </div>
+      <div id="cnt" class="count"></div>
+    </div>
+
+    <div class="card">
+      <ul id="list"></ul>
+    </div>
+
+  <footer class="credit">
+    출처: <a href="https://blog.naver.com/kku_89/222981124577" target="_blank" rel="noopener">네이버 블로그 kku_89 — 라그나로크 X OX 퀴즈 정답</a> · 열람일 2025-08-28<br/>
+    원문을 참고하여 요약·재구성했습니다. 문제가 있을 경우 알려주세요.
+  </footer>
+
+<script>
+  // ===== 1) 족보 데이터 (하드코딩) =====
+  // ans: true = O(녹색), false = X(빨강)
+  const BANK = [
+    { q: `AGI가 증가하면 ASPD 레벨과 FLEE가 향상된다.`, ans: true },
+    { q: `AGI가 증가하면 SPD가 향상된다.`, ans: false },
+    { q: `AGI가 증가하면 신속이 향상된다.`, ans: false },
+    { q: `ASPD 및 최종ASPD는 같은 속성이 아니다.`, ans: true },
+    { q: `CRI와 최종 CRI는 같은 속성이다.`, ans: false },
+    { q: `DEX가 증가하면 HIT가 향상된다.`, ans: true },
+    { q: `DEX가 증가하면 SPD가 향상된다.`, ans: false },
+    { q: `DEX가 증가하면 신속이 향상된다.`, ans: true },
+    { q: `FLEE와 최종 FLEE는 같은 속성이다.`, ans: false },
+    { q: `INT가 증가하면 MATK와 MDEF가 향상된다.`, ans: true },
+    { q: `INT가 증가하면 Max HP와 Max SP가 향상된다.`, ans: false },
+    { q: `INT가 증가하면 Max SP가 향상된다.`, ans: true },
+    { q: `LUK가 증가하면 ATK가 향상된다.`, ans: true },
+    { q: `LUK가 증가하면 CRI와 CRI.DEF가 향상된다.`, ans: true },
+    { q: `LUK가 증가하면 HIT가 향상된다.`, ans: false },
+    { q: `MATK 대미지는 목표 체형의 영향을 받는다.`, ans: false },
+    { q: `Mini 데빌링은 대형 몬스터이다.`, ans: false },
+    { q: `MVP와 Mini의 리젠 시간은 같다.`, ans: false },
+    { q: `RO 스토리는 주로 룬 미드가츠에서 일어난다.`, ans: true },
+    { q: `RO 스토리는 주로 이세계에서 일어난다.`, ans: false },
+    { q: `RO 스토리에서 세계를 창조한 거인은 반고이다.`, ans: false },
+    { q: `RO 스토리에서 세계를 창조한 거인은 이미르다.`, ans: true },
+    { q: `RO의 정식 명칭은 라그나로크 온라인이다.`, ans: true },
+    { q: `RO의 정식 명칭은 레고라크 온라인이다.`, ans: false },
+    { q: `STR이 증가하면 ATK가 향상된다.`, ans: true },
+    { q: `STR이 증가하면 ATK와 DEF가 향상된다.`, ans: false },
+    { q: `STR이 증가하면 ATK와 MATK가 향상된다.`, ans: false },
+    { q: `VIT가 증가하면 DEF가 향상된다.`, ans: true },
+    { q: `VIT가 증가하면 DEF와 MDEF가 향상된다.`, ans: false },
+    { q: `VIT가 증가하면 Max Hp 및 Max sp가 증가한다.`, ans: false },
+    { q: `W는 카프라의 인기 여왕으로 불린다.`, ans: true },
+    { q: `가장자리가 가운데보다 두꺼운 렌즈를 볼록 렌즈라고 한다.`, ans: false },
+    { q: `거래소에서 다이아를 받고 아이템을 판매하면, 거래세를 뺀 다이아 수량과 같은 양의 수정을 획득할 수 있다.`, ans: true },
+    { q: `검은색은 태양광의 일곱 가지 색깔을 모두 흡수할 수 있다.`, ans: true },
+    { q: `게펜은 마법사 길드가 있는 지역이다.`, ans: true },
+    { q: `게펜은 프론테라 남동쪽에 있다.`, ans: false },
+    { q: `게펜은 프론테라의 북서쪽에 있다.`, ans: true },
+    { q: `게펜의 구조대원은 물구나무 선 채로 음식을 먹을 수 있다.`, ans: true },
+    { q: `게펜의 지하에는 마법 왕국이 있었다.`, ans: true },
+    { q: `겨울에 뜨거운 물을 따를때, 두꺼운 유리컵이 오히려 쉽게 깨진다.`, ans: true },
+    { q: `구름과 안개는 본질적으로 같은 물질이다.`, ans: true },
+    { q: `국경 도시 모로크는 면화 산업이 무척 발달했다.`, ans: true },
+    { q: `길드 KVM 참가 시 같은 진영의 파티원을 다른 길드 멤버로 구성 할 수 있다.`, ans: false },
+    { q: `길드 레벨이 상승하면 최대 인원수도 증가한다.`, ans: true },
+    { q: `나이트는 조건만 맞으면 페코페코 탈것을 대여할 수 있다.`, ans: true },
+    { q: `나이트메어의 눈은 사람의 마음을 꿰뚫어보는 힘을 지녔다고 전해진다.`, ans: true },
+    { q: `낡은 스크롤과 알코올은 모두 불사형 몬스터가 드롭하는 아이템이다.`, ans: false },
+    { q: `너무 많이 먹으면 청력이 떨어진다.`, ans: true },
+    { q: `노비스의 스킬 [응급치료]는 자신의 HP를 회복시킬 수 있다.`, ans: true },
+    { q: `노비스의 스킬 [응급치료]는 자신의 HP와 Sp를 회복시킬 수 있다.`, ans: false },
+    { q: `노비스의 스킬 [죽은 척 하기]는 HP 회복과 SP 회복을 높일 수 있다.`, ans: false },
+    { q: `노비스의 스킬 [죽은 척 하기]는 몬스터의 원한을 제거할 수 있다.`, ans: true },
+    { q: `노점에서 필요한 물건을 찾으려면 가게를 하나씩 열어봐야 한다.`, ans: false },
+    { q: `뇌는 몸에서 가장 뚱뚱한 기관으로 60%가 지방이다.`, ans: true },
+    { q: `단검은 대형과 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `단검은 소형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: true },
+    { q: `독속성 공격시 모든 속성에게 주는 대미지가 증가한다.`, ans: false },
+    { q: `독약은 궁수 직업에 필수적인 소모품이다.`, ans: false },
+    { q: `드라이아이스는 물을 압축해서 만든다.`, ans: false },
+    { q: `드레이크의 까마귀는 언제나 그의 왼쪽 어깨에 앉아있다.`, ans: true },
+    { q: `라그나로크는 만화를 원작으로 한 게임이다.`, ans: true },
+    { q: `레벨이 같은 소중대형 몬스터의 HP와 Exp는 일정 비율에 따라 점차 증가한다(확인).`, ans: true },
+    { q: `마른 수건으로 젖은모발을 가볍게 눌러주면 모발을 효과적으로 관리할 수 있다.`, ans: true },
+    { q: `마야가 방어태세를 갖추면 원거리 직업은 공격을 강화하여 쉴드를 파괴해야한다.`, ans: false },
+    { q: `만능약은 대부분 상태이상 제거할 수 있다.`, ans: true },
+    { q: `매그넘 브레이크 사용시 일반공격의 속성이 화속성으로 변한다.`, ans: true },
+    { q: `매일 12시와 20시, 프론테라에서 오딘의 축복 포인트를 추가로 획득할 수 있다.`, ans: true },
+    { q: `매지션의 스킬(SP 회복력 향상)은 HP 회복과 SP 회복을 높일 수 있다.`, ans: false },
+    { q: `매지션의 스킬(sp 회복력 향상)은 SP 회복을 높일 수 있다.`, ans: true },
+    { q: `멋있는 카프라 친위대장의 별명은 레이미미이다.`, ans: true },
+    { q: `모로크 같은 사막 도시는 나이트의 천국이다.`, ans: false },
+    { q: `모로크는 프론테라의 남동쪽에 있다.`, ans: false },
+    { q: `모로크는 프론테라의 남서쪽에 있다.`, ans: true },
+    { q: `무낙과 본건은 몬스터로 변하기 전에 서로 사랑하는 연인이었다고 한다.`, ans: false },
+    { q: `미드가르드 대륙에는 총 7가지 종류의 포링이 살고 있다.`, ans: true },
+    { q: `미드가르드 대륙에는 총 9가지 종류의 포링이 살고 있다.`, ans: false },
+    { q: `미스트레스의 벌집 구조는 원형이다.`, ans: false },
+    { q: `바다에 가장 많은 생물은 변종 피라니아이다.`, ans: false },
+    { q: `바포메트가 착용한 액세서리 이름은 악마의 반지다.`, ans: true },
+    { q: `밤이 되면 떠돌이 늑대가 더 강해진다.`, ans: true },
+    { q: `백련옥은 페코페코 알이 깨진 후 생긴 원혼이다.`, ans: true },
+    { q: `변종 피라니아의 비늘에 있는 나이테는 1개가 1년을 의미한다.`, ans: false },
+    { q: `사과에서 가장 달콤한 부분은 아래쪽이다.`, ans: false },
+    { q: `사람과 바나나 유전자는 50% 일치한다.`, ans: true },
+    { q: `산초는 채소가 아니다.`, ans: true },
+    { q: `세니아의 전직 후 직업은 매지션이다.`, ans: false },
+    { q: `세니아의 전직 후 직업은 소드맨이다.`, ans: true },
+    { q: `세비지 베베는 기분이 아주 좋을때 꼬리를 수평으로 흔든다.`, ans: true },
+    { q: `소드 피쉬는 귀가 있다.`, ans: true },
+    { q: `소드맨은 조건만 맞으면 페코페코 탈것을 대여할 수 있다.`, ans: false },
+    { q: `소드맨의 스킬 HP 회복 향상은 자신의 HP회복과 SP회복을 높일 수 있다.`, ans: false },
+    { q: `소드맨의 스킬 HP 회복 향상은 자신의 HP회복을 높일 수 있다.`, ans: true },
+    { q: `수정 버섯은 밤은 물론 맑은 낮에도 채집할 수 있다.`, ans: false },
+    { q: `신속이 증가하면 스킬의 변동 캐스팅 시간을 줄일 수 있다.`, ans: true },
+    { q: `씨프의 스킬 [더블 어택]은 단검류 무기 장착시 발동할 수 있다.`, ans: true },
+    { q: `씨프의 스킬 [더블 어택]은 카타르류 무기 장착시 발동할 수 있다.`, ans: false },
+    { q: `아스페르시오 사용 시 목표의 일반공격의 속성이 성속성으로 변한다.`, ans: true },
+    { q: `아처는 조건만 맞으면 팔콘을 대여할 수 있다.`, ans: false },
+    { q: `아처의 스킬 [더블 스트레이핑]은 액티브 스킬이다.`, ans: true },
+    { q: `아처의 스킬 [더블 스트레이핑]은 패시브 스킬이다.`, ans: false },
+    { q: `악어는 뒤로 기어갈 수 있다.`, ans: true },
+    { q: `애리얼/에리얼의 뛰어난 균형감각은 뇌가 잘 발달했기 때문이다.`, ans: false },
+    { q: `양손검은 대형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: true },
+    { q: `양손검은 대형과 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `양손검은 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `어떤 직업이든 조건만 맞으면 팔콘을 대여할 수 있다.`, ans: false },
+    { q: `어떤 직업이든 조건만 맞으면 페코페코 탈것을 대여할 수 있다.`, ans: false },
+    { q: `어쌔신은 구르기 또는 하이딩 스킬 사용시, 하이딩 상태가 된다.`, ans: true },
+    { q: `어콜라이트의 스킬 [블레싱]은 CRI, CRI.DEF 를 증가시킬 수 있다.`, ans: false },
+    { q: `어콜라이트의 스킬 [블레싱]은 STR, DEX, INT 를 증가시킬 수 있다.`, ans: true },
+    { q: `엔들리스 타워는 파티로만 입장 가능하다.`, ans: true },
+    { q: `연근은 연꽃의 뿌리이다.`, ans: false },
+    { q: `연필심에 사용되는 재료는 흑연이다.`, ans: true },
+    { q: `월야화는 아름다운 붉은색 눈동자를 가지고 있다.`, ans: true },
+    { q: `이즈루드는 프론테라의 남동쪽에 있다.`, ans: true },
+    { q: `이즈루드는 프론테라의 북서쪽에 있다.`, ans: false },
+    { q: `이즈루드에서 해상 워프를 담당하는 선장은 카루이다.`, ans: true },
+    { q: `이즈루드에서 해상 워프를 담당하는 선장은 카인이다.`, ans: false },
+    { q: `이즈루드의 해변에는 여름이면 종종 신기루가 나타난다.`, ans: true },
+    { q: `이클립스는 두리안 풀을 좋아한다.`, ans: true },
+    { q: `인챈트 포이즌 사용 시 일반공격의 속성이 독속성으로 변한다.`, ans: false },
+    { q: `재채기를 할 때는 눈을 뜰 수 없다.`, ans: true },
+    { q: `전설에 따르면 묘르닐 폐광에는 봉인이라는 이름을 가진 심보 고약한 탄광주가 있다고한다.`, ans: true },
+    { q: `주점의 팔씨름 미니 게임을 할 때 모든 사람이 습관적으로 왼손을 사용한다.`, ans: false },
+    { q: `창은 대형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: true },
+    { q: `창은 소형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `최근 몬스터 조사원의 후각이 갈수록 나빠진 원인는 간 기능이 약해졌기 때문이다.`, ans: false },
+    { q: `카프라 메이드단은 식초를 떨어뜨려 밥의 탄 맛을 없애는 비결을 가지고 있다.`, ans: true },
+    { q: `카프라 메이드단의 멤버는 통일된 유니폼을 입지만 그들의 전용팬티는 모두 다르다.`, ans: true },
+    { q: `카프라 직원은 프론테라에만 있다.`, ans: false },
+    { q: `카프라사의 본부는 운하의 도시 알베르타에 있다.`, ans: false },
+    { q: `킹 드라모는 코로 숨을 쉰다.`, ans: false },
+    { q: `킹 드라모의 붉은 얼룩무늬는 불길에 데인 흔적이다.`, ans: true },
+    { q: `테드린이 요즘 열이 오르는 이유는 리치를 너무 많이 먹었기 때문이다.`, ans: true },
+    { q: `팔콘은 헌터 직업 전용으로 다른 직업의 모험가는 보유할 수 없다.`, ans: true },
+    { q: `퍼밀리어는 조류에 속하지 않는다.`, ans: true },
+    { q: `페이욘은 선왕이 은거했다고 전해지는 산악 도시이다.`, ans: true },
+    { q: `페이욘은 프론테라의 남동쪽에 있다.`, ans: true },
+    { q: `페이욘은 프론테라의 남서쪽에 있다.`, ans: false },
+    { q: `페이욘의 연못에는 연꽃 세 송이가 피어있다.`, ans: true },
+    { q: `페이욘의 코코가 잘 때 이를 가는 원인은 아연의 섭취가 부족하기 때문이다.`, ans: true },
+    { q: `페이욘의 코코는 편식으로 비타민 B가 부족해져 야맹증에 걸렸다.`, ans: false },
+    { q: `페코페코가 가끔 작은 돌을 먹는 것은 소화를 돕기 위해서다.`, ans: true },
+    { q: `포링이 가장 좋아하는 음식은 사과 쥬스다.`, ans: true },
+    { q: `프론 주점의 캣우먼은 혀끝이 예민해서 뜨거운 음식을 절대 먹지 않는다.`, ans: true },
+    { q: `프론테라 남문에 있는 부녀는 사실 혈연관계가 아니다.`, ans: true },
+    { q: `프론테라 남문에서 연인들이 가장 좋아하는 곳은 함께 탈 수 있는 2인용 목마이다.`, ans: true },
+    { q: `프론테라 남문의 벤치는 계속 앉아 있을 수 있다.`, ans: false },
+    { q: `프론테라 서문에 있는 풍차의 주요 기능은 배수이다.`, ans: true },
+    { q: `프리오니 산성비 공격에 명중시 만능약으로 상태이상 제거.`, ans: true },
+    { q: `피 묻은 나뭇가지로 MVP/MINI몬스터를 최대 1시간 동안 소환할 수 있다.`, ans: true },
+    { q: `피안화는 이별을 상징한다.`, ans: true },
+    { q: `하얀 양귀비의 꽃말은 인내심이다.`, ans: false },
+    { q: `하얀 장미는 첫사랑을 상징한다.`, ans: false },
+    { q: `한손검은 대형과 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `한손검은 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: true },
+    { q: `해저동굴에서는 6가지 종류의 물고기를 낚을 수 있다.`, ans: true },
+    { q: `헌터는 조건만 맞으면 팔콘을 대여할 수 있다.`, ans: true },
+    { q: `현재 미드가르드 대륙에 살고 있는 고블린의 종류는 총 9가지이다.`, ans: false },
+    { q: `홀그랜은 이두박근을 과시할 때, 먼저 양손을 높이 든 다음 다시 오른손을 들기를 좋아한다.`, ans: false },
+    { q: `홀그렌과 친해지면 강화성공률이 상승한다.`, ans: true },
+    { q: `활은 대형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: false },
+    { q: `활은 소형 및 중형 몬스터에 100%의 대미지를 입힐 수 있다.`, ans: true },
+  ];
+
+  // ===== 2) DOM 참조 =====
+  const listEl = document.getElementById("list");
+  const inputEl = document.getElementById("keyword");
+  const clearEl = document.getElementById("clear");
+  const cntEl = document.getElementById("cnt");
+
+  // ===== 3) 유틸: HTML 이스케이프 =====
+  const escapeHTML = (s) => s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+
+  // 하이라이트 (다중 키워드 지원)
+  function highlight(text, tokens){
+    if(!tokens || tokens.length===0) return escapeHTML(text);
+    const escTokens = tokens.filter(Boolean).map(t=>t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    if(escTokens.length===0) return escapeHTML(text);
+    const re = new RegExp(escTokens.join("|"), "gi");
+    const marked = text.replace(re, m => `%%${m}%%`);
+    let safe = escapeHTML(marked);
+    safe = safe.replace(/%%(.*?)%%/g, "<mark>$1</mark>");
+    return safe;
+  }
+
+  // ===== 4) 렌더 =====
+  function render(items, tokens=[]){
+    listEl.innerHTML = "";
+    cntEl.textContent = `${items.length} / ${BANK.length}`;
+    if(items.length === 0){
+      listEl.innerHTML = `<div class="empty">검색 결과가 없어요.</div>`;
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach(item=>{
+      const li = document.createElement("li");
+      const q = document.createElement("div");
+      q.className = "q";
+      q.innerHTML = highlight(item.q, tokens);
+      const ox = document.createElement("div");
+      ox.className = `badge ${item.ans ? 'o' : 'x'}`;
+      ox.textContent = item.ans ? 'O' : 'X';
+      ox.title = `정답: ${item.ans ? 'O' : 'X'}`;
+      li.appendChild(q);
+      li.appendChild(ox);
+      frag.appendChild(li);
+    });
+    listEl.appendChild(frag);
+  }
+
+  // ===== 5) 검색 (띄어쓰기 = 다중 키워드, 순서 무관 포함검색) =====
+  function applyFilter(){
+    const kw = inputEl.value.trim();
+    if(!kw){ render(BANK); return; }
+    const tokens = kw.toLowerCase().split(/\s+/).filter(Boolean);
+    const filtered = BANK.filter(v => {
+      const s = v.q.toLowerCase();
+      return tokens.every(t => s.includes(t));
+    });
+    render(filtered, tokens);
+  }
+
+  // 초기화 버튼
+  clearEl.addEventListener("click", ()=>{ inputEl.value = ""; inputEl.focus(); render(BANK); });
+  inputEl.addEventListener("input", applyFilter);
+  inputEl.addEventListener("keydown", (e)=>{ if(e.key === "Escape"){ clearEl.click(); } });
+
+  // 초기 렌더
+  render(BANK);
+</script>
+</body>
+</html>
