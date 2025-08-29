@@ -144,9 +144,10 @@
   <span class="credit-chip">✍️ 만든이: DanDan</span>
   <span class="credit-chip">🖥️ 서버: 북두의 태권</span>
 </footer>
+  
   <script>
-  /* ===== 데이터 ===== */
-  const PRODUCTS = [
+/* ===== 데이터 ===== */
+const PRODUCTS = [
   "연마의 인챈트 스톤","강인의 인챈트 스톤","시크릿 더스트 인챈트 스톤",
   "무기 강화 금속 Ⅲ","방어구 강화 금속 Ⅲ","액세서리 강화 금속 Ⅲ",
   "농축 오리데오콘","농축 에르늄","농축 브라디움",
@@ -180,279 +181,324 @@ const RECIPES = [
   { product:"탄사어", materials:[ {name:"바위 버섯",qty:1} ] },
   { product:"비단 해파리", materials:[ {name:"부근초",qty:1} ] },
 
-  // 🔽 인챈트 스톤 3종
   { product:"연마의 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"수정 버섯",qty:2} ] },
   { product:"강인의 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"질긴 덩굴",qty:2} ] },
   { product:"시크릿 더스트 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"비밀의 꽃",qty:2} ] },
 
-  // 🔽 강화 금속 Ⅲ 3종
   { product:"무기 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"나비 가리비",qty:3} ] },
   { product:"방어구 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"흰 날개 조개",qty:3} ] },
   { product:"액세서리 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"에너지 조개",qty:3} ] },
 
-  // 🔽 농축 금속 3종
   { product:"농축 오리데오콘", materials:[ {name:"오리데오콘 광석 Lv.2",qty:7},{name:"등불 물고기",qty:9} ] },
   { product:"농축 에르늄", materials:[ {name:"에르늄 광석 Lv.2",qty:7},{name:"별빛 소라",qty:9} ] },
   { product:"농축 브라디움", materials:[ {name:"브라디움 광석 Lv.2",qty:7},{name:"야광 진주",qty:9} ] }
 ];
 
+const DEFAULT_QTY = {};
+const RecipeMap = Object.fromEntries(RECIPES.map(r=>[r.product,r.materials]));
 
+/* ===== 상태/스토리지 ===== */
+window.AppState={
+  players:[],nextId:1,selectedPlayerId:null,selectedProduct:null,
+  playerSelections:{},playerProductQty:{},playerChecked:{},currentTree:null
+};
+const KEY_PLAYERS='craftinfo.players';
+const KEY_LAST_PLAYER='craftinfo.lastPlayerId';
+const KEY_PLAYER_SELECTIONS='craftinfo.playerSelections';
+const KEY_PLAYER_PRODUCT_QTY='craftinfo.playerProductQty';
+const KEY_PLAYER_CHECKED='craftinfo.playerChecked';
 
-  const DEFAULT_QTY = {};
-  const RecipeMap = Object.fromEntries(RECIPES.map(r=>[r.product,r.materials]));
+const savePlayers=()=>localStorage.setItem(KEY_PLAYERS,JSON.stringify(AppState.players));
+const saveLastPlayer=()=>localStorage.setItem(KEY_LAST_PLAYER,JSON.stringify(AppState.selectedPlayerId));
+const savePlayerSelections=()=>localStorage.setItem(KEY_PLAYER_SELECTIONS,JSON.stringify(AppState.playerSelections));
+const savePlayerProductQty=()=>localStorage.setItem(KEY_PLAYER_PRODUCT_QTY,JSON.stringify(AppState.playerProductQty));
+const savePlayerChecked=()=>localStorage.setItem(KEY_PLAYER_CHECKED,JSON.stringify(AppState.playerChecked));
 
-  /* ===== 상태/스토리지 ===== */
-  window.AppState={
-    players:[],nextId:1,selectedPlayerId:null,selectedProduct:null,
-    playerSelections:{},playerProductQty:{},playerChecked:{},currentTree:null
-  };
-  const KEY_PLAYERS='craftinfo.players';
-  const KEY_LAST_PLAYER='craftinfo.lastPlayerId';
-  const KEY_PLAYER_SELECTIONS='craftinfo.playerSelections';
-  const KEY_PLAYER_PRODUCT_QTY='craftinfo.playerProductQty';
-  const KEY_PLAYER_CHECKED='craftinfo.playerChecked';
+function loadAll(){try{
+  AppState.players=JSON.parse(localStorage.getItem(KEY_PLAYERS)??'[]');
+  AppState.nextId=AppState.players.length?Math.max(...AppState.players.map(p=>p.id))+1:1;
+  const last=JSON.parse(localStorage.getItem(KEY_LAST_PLAYER)??'null');
+  if(typeof last==='number') AppState.selectedPlayerId=last;
+  AppState.playerSelections=JSON.parse(localStorage.getItem(KEY_PLAYER_SELECTIONS)??'{}')||{};
+  AppState.playerProductQty=JSON.parse(localStorage.getItem(KEY_PLAYER_PRODUCT_QTY)??'{}')||{};
+  AppState.playerChecked=JSON.parse(localStorage.getItem(KEY_PLAYER_CHECKED)??'{}')||{};
+}catch(e){console.warn('로드 실패',e)}}
 
-  const savePlayers=()=>localStorage.setItem(KEY_PLAYERS,JSON.stringify(AppState.players));
-  const saveLastPlayer=()=>localStorage.setItem(KEY_LAST_PLAYER,JSON.stringify(AppState.selectedPlayerId));
-  const savePlayerSelections=()=>localStorage.setItem(KEY_PLAYER_SELECTIONS,JSON.stringify(AppState.playerSelections));
-  const savePlayerProductQty=()=>localStorage.setItem(KEY_PLAYER_PRODUCT_QTY,JSON.stringify(AppState.playerProductQty));
-  const savePlayerChecked=()=>localStorage.setItem(KEY_PLAYER_CHECKED,JSON.stringify(AppState.playerChecked));
+function getQtyForPlayerProduct(playerId,productName){
+  const stored=AppState.playerProductQty[playerId]?.[productName];
+  if(stored!=null) return Math.max(0,parseInt(stored,10)||0);
+  const def=DEFAULT_QTY[productName];
+  return Math.max(0,parseInt(def??1,10)||1);
+}
+function setQtyForPlayerProduct(playerId,productName,qty){
+  if(playerId==null) return;
+  if(!AppState.playerProductQty[playerId]) AppState.playerProductQty[playerId]={};
+  AppState.playerProductQty[playerId][productName]=Math.max(0,parseInt(qty??1,10)||1);
+  savePlayerProductQty();
+}
 
-  function loadAll(){try{
-    AppState.players=JSON.parse(localStorage.getItem(KEY_PLAYERS)??'[]');
-    AppState.nextId=AppState.players.length?Math.max(...AppState.players.map(p=>p.id))+1:1;
-    const last=JSON.parse(localStorage.getItem(KEY_LAST_PLAYER)??'null');
-    if(typeof last==='number') AppState.selectedPlayerId=last;
-    AppState.playerSelections=JSON.parse(localStorage.getItem(KEY_PLAYER_SELECTIONS)??'{}')||{};
-    AppState.playerProductQty=JSON.parse(localStorage.getItem(KEY_PLAYER_PRODUCT_QTY)??'{}')||{};
-    AppState.playerChecked=JSON.parse(localStorage.getItem(KEY_PLAYER_CHECKED)??'{}')||{};
-  }catch(e){console.warn('로드 실패',e)}}
+function getCheckedMap(playerId, product){
+  if(!AppState.playerChecked[playerId]) AppState.playerChecked[playerId] = {};
+  if(!AppState.playerChecked[playerId][product]) AppState.playerChecked[playerId][product] = {};
+  return AppState.playerChecked[playerId][product];
+}
+function setChecked(playerId, product, nodeId, value){
+  const map = getCheckedMap(playerId, product);
+  if(value) map[nodeId] = true; else delete map[nodeId];
+  savePlayerChecked();
+}
 
-  function getQtyForPlayerProduct(playerId,productName){
-    const stored=AppState.playerProductQty[playerId]?.[productName];
-    if(stored!=null) return Math.max(0,parseInt(stored,10)||0);
-    const def=DEFAULT_QTY[productName];
-    return Math.max(0,parseInt(def??1,10)||1);
+/* ===== 플레이어 ===== */
+function renderPlayers(){
+  const list=document.getElementById('playerList'),empty=document.getElementById('playerEmpty');
+  list.innerHTML='';
+  if(!AppState.players.length){empty.hidden=false;list.hidden=true;return;}
+  empty.hidden=true;list.hidden=false;
+  for(const p of AppState.players){
+    const li=document.createElement('li'); li.className='player-item'; li.dataset.id=String(p.id);
+    if(AppState.selectedPlayerId===p.id) li.classList.add('selected');
+    const name=document.createElement('span'); name.className='player-name'; name.textContent=p.name;
+    const del=document.createElement('button'); del.className='btn-outline'; del.textContent='삭제';
+    del.addEventListener('click',ev=>{ev.stopPropagation(); removePlayer(p.id);});
+    li.addEventListener('click',()=>selectPlayer(p.id));
+    li.append(name,del); list.appendChild(li);
   }
-  function setQtyForPlayerProduct(playerId,productName,qty){
-    if(playerId==null) return;
-    if(!AppState.playerProductQty[playerId]) AppState.playerProductQty[playerId]={};
-    AppState.playerProductQty[playerId][productName]=Math.max(0,parseInt(qty??1,10)||1);
-    savePlayerProductQty();
-  }
+}
+function addPlayer(name){
+  const n=(name||'').trim(); if(!n) return;
+  AppState.players.push({id:AppState.nextId++,name:n});
+  savePlayers(); renderPlayers();
+}
+function removePlayer(id){
+  AppState.players=AppState.players.filter(p=>p.id!==id);
+  delete AppState.playerSelections[id]; delete AppState.playerProductQty[id]; delete AppState.playerChecked[id];
+  savePlayers(); savePlayerSelections(); savePlayerProductQty(); savePlayerChecked();
+  if(AppState.selectedPlayerId===id){ AppState.selectedPlayerId=null; saveLastPlayer(); AppState.selectedProduct=null; renderNeedPanel(); loadProducts(); }
+  renderPlayers();
+}
+function selectPlayer(id){
+  if(!AppState.players.some(p=>p.id===id)) return;
+  AppState.selectedPlayerId=id; saveLastPlayer(); renderPlayers();
+  const sel=AppState.playerSelections[id];
+  if(sel&&sel.name){const q=getQtyForPlayerProduct(id,sel.name); AppState.selectedProduct={name:sel.name,qty:q};}
+  else AppState.selectedProduct=null;
+  renderNeedPanel(); loadProducts(); updateNeedTitleChip(); updatePlayerTitle(); updateProductTitle();
+  UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true);
+}
 
-  function getCheckedMap(playerId, product){
-    if(!AppState.playerChecked[playerId]) AppState.playerChecked[playerId] = {};
-    if(!AppState.playerChecked[playerId][product]) AppState.playerChecked[playerId][product] = {};
-    return AppState.playerChecked[playerId][product];
+/* ===== 제품 목록 ===== */
+function loadProducts(){
+  const grid=document.getElementById('productGrid'); grid.innerHTML='';
+  if(AppState.selectedPlayerId==null){
+    const empty=document.createElement('div'); empty.className='empty-state';
+    const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='👤';
+    const msg=document.createElement('div'); msg.className='msg'; msg.textContent='캐릭터를 선택해 주세요';
+    empty.append(emoji, msg);
+    grid.appendChild(empty);
+    return;
   }
-  function setChecked(playerId, product, nodeName, value){
-    const map = getCheckedMap(playerId, product);
-    if(value) map[nodeName] = true; else delete map[nodeName];
-    savePlayerChecked();
+  const selectedName = AppState.selectedProduct?.name || null;
+  for(const line of PRODUCTS){
+    const card=document.createElement('div'); card.className='card'; card.dataset.product=line;
+    if(selectedName && line===selectedName){ card.classList.add('selected'); }
+    const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(line)+'.png'; img.alt=line;
+    const info=document.createElement('span'); info.className='info'; info.textContent=line;
+    card.append(img,info);
+    card.addEventListener('click',()=>{
+      let qty=1; if(AppState.selectedPlayerId!=null) qty=getQtyForPlayerProduct(AppState.selectedPlayerId,line);
+      AppState.selectedProduct={name:line,qty};
+      if(AppState.selectedPlayerId!=null){ AppState.playerSelections[AppState.selectedPlayerId]={name:line,qty}; savePlayerSelections(); }
+      renderNeedPanel(); loadProducts(); updateNeedTitleChip(); updateProductTitle();
+      UIState.showProducts=false; setPanelCollapsedById('productPanel', true);
+    });
+    grid.appendChild(card);
   }
+}
+function renderSelectedInTitle(){ updateProductTitle(); }
 
-  /* ===== 플레이어 ===== */
-  function renderPlayers(){
-    const list=document.getElementById('playerList'),empty=document.getElementById('playerEmpty');
-    list.innerHTML='';
-    if(!AppState.players.length){empty.hidden=false;list.hidden=true;return;}
-    empty.hidden=true;list.hidden=false;
-    for(const p of AppState.players){
-      const li=document.createElement('li'); li.className='player-item'; li.dataset.id=String(p.id);
-      if(AppState.selectedPlayerId===p.id) li.classList.add('selected');
-      const name=document.createElement('span'); name.className='player-name'; name.textContent=p.name;
-      const del=document.createElement('button'); del.className='btn-outline'; del.textContent='삭제';
-      del.addEventListener('click',ev=>{ev.stopPropagation(); removePlayer(p.id);});
-      li.addEventListener('click',()=>selectPlayer(p.id));
-      li.append(name,del); list.appendChild(li);
-    }
-  }
-  function addPlayer(name){
-    const n=(name||'').trim(); if(!n) return;
-    AppState.players.push({id:AppState.nextId++,name:n});
-    savePlayers(); renderPlayers();
-  }
-  function removePlayer(id){
-    AppState.players=AppState.players.filter(p=>p.id!==id);
-    delete AppState.playerSelections[id]; delete AppState.playerProductQty[id]; delete AppState.playerChecked[id];
-    savePlayers(); savePlayerSelections(); savePlayerProductQty(); savePlayerChecked();
-    if(AppState.selectedPlayerId===id){ AppState.selectedPlayerId=null; saveLastPlayer(); AppState.selectedProduct=null; renderNeedPanel(); loadProducts(); }
-    renderPlayers();
-  }
-  function selectPlayer(id){
-    if(!AppState.players.some(p=>p.id===id)) return;
-    AppState.selectedPlayerId=id; saveLastPlayer(); renderPlayers();
-    const sel=AppState.playerSelections[id];
-    if(sel&&sel.name){const q=getQtyForPlayerProduct(id,sel.name); AppState.selectedProduct={name:sel.name,qty:q};}
-    else AppState.selectedProduct=null;
-    renderNeedPanel(); loadProducts(); updateNeedTitleChip(); updatePlayerTitle(); updateProductTitle();
-    // 자동 접기
-    UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true);
-  }
+/* ===== 타이틀 칩 ===== */
+function updateNeedTitleChip(){ const host=document.getElementById('needTitleRight'); if(host) host.innerHTML=''; }
 
-  /* ===== 제품 목록 ===== */
-  function loadProducts(){
-    const grid=document.getElementById('productGrid'); grid.innerHTML='';
-    if(AppState.selectedPlayerId==null){
-      const empty=document.createElement('div'); empty.className='empty-state';
-      const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='👤';
-      const msg=document.createElement('div'); msg.className='msg'; msg.textContent='캐릭터를 선택해 주세요';
-      empty.append(emoji, msg);
-      grid.appendChild(empty);
-      return;
-    }
-    const selectedName = AppState.selectedProduct?.name || null;
-    for(const line of PRODUCTS){
-      const card=document.createElement('div'); card.className='card'; card.dataset.product=line;
-      if(selectedName && line===selectedName){ card.classList.add('selected'); }
-      const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(line)+'.png'; img.alt=line;
-      const info=document.createElement('span'); info.className='info'; info.textContent=line;
-      card.append(img,info);
-      card.addEventListener('click',()=>{
-        let qty=1; if(AppState.selectedPlayerId!=null) qty=getQtyForPlayerProduct(AppState.selectedPlayerId,line);
-        AppState.selectedProduct={name:line,qty};
-        if(AppState.selectedPlayerId!=null){ AppState.playerSelections[AppState.selectedPlayerId]={name:line,qty}; savePlayerSelections(); }
-        renderNeedPanel(); loadProducts(); updateNeedTitleChip(); updateProductTitle();
-        // 자동 접기
-        UIState.showProducts=false; setPanelCollapsedById('productPanel', true);
-      });
-      grid.appendChild(card);
-    }
-  }
+function updatePlayerTitle(){
+  const host=document.getElementById('playerTitleRight'); if(!host) return; host.innerHTML='';
+  const name=(AppState.players.find(p=>p.id===AppState.selectedPlayerId)||{}).name;
+  const chip=document.createElement('span'); chip.className='chip-mini'; chip.textContent = name?`선택: ${name}`:'미선택';
+  const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = name ? '✏️ 변경' : '선택';
+  btn.addEventListener('click',()=>{
+    UIState.showPlayers=!UIState.showPlayers;
+    if(UIState.showPlayers){ UIState.showProducts=false; setPanelCollapsedById('productPanel', true); }
+    setPanelCollapsedById('playerPanel', !UIState.showPlayers);
+    updatePlayerTitle(); updateProductTitle();
+  });
+  host.append(chip, btn);
+}
 
-  function renderSelectedInTitle(){ updateProductTitle(); }
-
-  /* ===== 타이틀 칩 ===== */
-  function updateNeedTitleChip(){ const host=document.getElementById('needTitleRight'); if(host) host.innerHTML=''; }
-
-  function updatePlayerTitle(){
-    const host=document.getElementById('playerTitleRight'); if(!host) return; host.innerHTML='';
-    const name=(AppState.players.find(p=>p.id===AppState.selectedPlayerId)||{}).name;
-    const chip=document.createElement('span'); chip.className='chip-mini'; chip.textContent = name?`선택: ${name}`:'미선택';
-    const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = name ? '✏️ 변경' : '선택';
+function updateProductTitle(){
+  const host=document.getElementById('productTitleRight'); if(!host) return; host.innerHTML='';
+  const name = AppState.selectedProduct?.name;
+  if(name){
+    const chip=document.createElement('div'); chip.className='chip';
+    const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(name)+'.png'; img.alt=name;
+    const nm=document.createElement('span'); nm.className='name'; nm.textContent=name;
+    const qtyWrap=document.createElement('div'); qtyWrap.className='qty-wrap';
+    const label=document.createElement('span'); label.className='qty-label'; label.textContent='수량';
+    const input=document.createElement('input'); input.type='number'; input.min='0'; input.step='1';
+    const initialQty = (AppState.selectedProduct?.qty ?? (AppState.selectedPlayerId!=null? getQtyForPlayerProduct(AppState.selectedPlayerId, name):1)) || 1;
+    input.value=String(initialQty); input.className='qty-field'; input.readOnly=true;
+    const startEdit = ()=>{ input.readOnly=false; input.focus(); input.select(); };
+    const commit = ()=>{
+      let v = Math.max(0, parseInt(input.value||'0',10)); input.value=String(v); input.readOnly=true;
+      if(AppState.selectedPlayerId!=null){ setQtyForPlayerProduct(AppState.selectedPlayerId, name, v); AppState.playerSelections[AppState.selectedPlayerId]={name, qty:v}; savePlayerSelections(); }
+      if(AppState.selectedProduct) AppState.selectedProduct.qty=v;
+      renderNeedPanel(); updateProductTitle();
+    };
+    let committed=false;
+    input.addEventListener('click', startEdit);
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } else if(e.key==='Escape'){ input.value=String(initialQty); input.readOnly=true; input.blur(); } });
+    input.addEventListener('blur', ()=>{ if(committed) return; committed=true; commit(); setTimeout(()=>{committed=false;},0); });
+    qtyWrap.append(label,input);
+    chip.append(img,nm,qtyWrap);
+    host.appendChild(chip);
+    const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = '✏️ 변경';
     btn.addEventListener('click',()=>{
-      UIState.showPlayers=!UIState.showPlayers;
-      if(UIState.showPlayers){ UIState.showProducts=false; setPanelCollapsedById('productPanel', true); }
-      setPanelCollapsedById('playerPanel', !UIState.showPlayers);
-      updatePlayerTitle(); updateProductTitle();
+      UIState.showProducts=!UIState.showProducts;
+      if(UIState.showProducts){ UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true); }
+      setPanelCollapsedById('productPanel', !UIState.showProducts);
+      updateProductTitle(); updatePlayerTitle();
+    });
+    host.appendChild(btn);
+  }else{
+    const chip=document.createElement('span'); chip.className='chip-mini'; chip.textContent='미선택';
+    const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = UIState.showProducts? '닫기' : '선택';
+    btn.addEventListener('click',()=>{
+      UIState.showProducts=!UIState.showProducts;
+      if(UIState.showProducts){ UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true); }
+      setPanelCollapsedById('productPanel', !UIState.showProducts);
+      updateProductTitle(); updatePlayerTitle();
     });
     host.append(chip, btn);
   }
+}
 
-  function updateProductTitle(){
-    const host=document.getElementById('productTitleRight'); if(!host) return; host.innerHTML='';
-    const name = AppState.selectedProduct?.name;
-    if(name){
-      const chip=document.createElement('div'); chip.className='chip';
-      const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(name)+'.png'; img.alt=name;
-      const nm=document.createElement('span'); nm.className='name'; nm.textContent=name;
-      const qtyWrap=document.createElement('div'); qtyWrap.className='qty-wrap';
-      const label=document.createElement('span'); label.className='qty-label'; label.textContent='수량';
-      const input=document.createElement('input'); input.type='number'; input.min='0'; input.step='1';
-      const initialQty = (AppState.selectedProduct?.qty ?? (AppState.selectedPlayerId!=null? getQtyForPlayerProduct(AppState.selectedPlayerId, name):1)) || 1;
-      input.value=String(initialQty); input.className='qty-field'; input.readOnly=true;
-      const startEdit = ()=>{ input.readOnly=false; input.focus(); input.select(); };
-      const commit = ()=>{
-        let v = Math.max(0, parseInt(input.value||'0',10)); input.value=String(v); input.readOnly=true;
-        if(AppState.selectedPlayerId!=null){ setQtyForPlayerProduct(AppState.selectedPlayerId, name, v); AppState.playerSelections[AppState.selectedPlayerId]={name, qty:v}; savePlayerSelections(); }
-        if(AppState.selectedProduct) AppState.selectedProduct.qty=v;
-        renderNeedPanel(); updateProductTitle();
-      };
-      let committed=false;
-      input.addEventListener('click', startEdit);
-      input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } else if(e.key==='Escape'){ input.value=String(initialQty); input.readOnly=true; input.blur(); } });
-      input.addEventListener('blur', ()=>{ if(committed) return; committed=true; commit(); setTimeout(()=>{committed=false;},0); });
-      qtyWrap.append(label,input);
-      chip.append(img,nm,qtyWrap);
-      host.appendChild(chip);
-      const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = '✏️ 변경';
-      btn.addEventListener('click',()=>{
-        UIState.showProducts=!UIState.showProducts;
-        if(UIState.showProducts){ UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true); }
-        setPanelCollapsedById('productPanel', !UIState.showProducts);
-        updateProductTitle(); updatePlayerTitle();
-      });
-      host.appendChild(btn);
-    }else{
-      const chip=document.createElement('span'); chip.className='chip-mini'; chip.textContent='미선택';
-      const btn=document.createElement('button'); btn.className='btn-link'; btn.textContent = UIState.showProducts? '닫기' : '선택';
-      btn.addEventListener('click',()=>{
-        UIState.showProducts=!UIState.showProducts;
-        if(UIState.showProducts){ UIState.showPlayers=false; setPanelCollapsedById('playerPanel', true); }
-        setPanelCollapsedById('productPanel', !UIState.showProducts);
-        updateProductTitle(); updatePlayerTitle();
-      });
-      host.append(chip, btn);
+/* ===== 필요재료 패널 (경로기반 ID로 체크 독립화) ===== */
+function renderNeedPanel(){
+  const box=document.getElementById('needBox'); box.innerHTML='';
+  const sel=AppState.selectedProduct;
+
+  if(AppState.selectedPlayerId==null){
+    const empty=document.createElement('div'); empty.className='empty-state';
+    const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='👤';
+    const msg=document.createElement('div'); msg.className='msg'; msg.textContent='캐릭터를 선택해 주세요';
+    empty.append(emoji, msg); box.appendChild(empty); return;
+  }
+  updateNeedTitleChip();
+
+  if(!sel){
+    const empty=document.createElement('div'); empty.className='empty-state';
+    const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='📦';
+    const msg=document.createElement('div'); msg.className='msg'; msg.textContent='제품을 선택해 주세요';
+    empty.append(emoji, msg); box.appendChild(empty); return;
+  }
+
+  const list=document.createElement('div'); list.className='list need-static';
+  const mats=RecipeMap[sel.name]||[];
+  if(!mats.length){ const p=document.createElement('p'); p.className='small-note'; p.textContent='레시피가 없습니다. (RECIPES 배열을 추가하세요)'; box.appendChild(p); return; }
+
+  const playerId = AppState.selectedPlayerId;
+  const product  = sel.name;
+  const checkedMap = getCheckedMap(playerId??'__noPlayer__', product);
+
+  // 경로기반 인스턴스 트리 컨텍스트
+  const ctx = { childrenById:{}, parentById:{} };
+
+  const getAllDescendantIds = (startId)=>{
+    const out=[]; const stack=[startId];
+    while(stack.length){
+      const cur = stack.pop(); const kids = ctx.childrenById[cur]||[];
+      for(const kid of kids){ out.push(kid); stack.push(kid); }
     }
-  }
-
-  /* ===== 트리 ===== */
-  function buildTreeContext(rootProduct){
-    const childrenMap = {}; const parentMap = {};
-    const visit = (name) => {
-      const children = RecipeMap[name] || [];
-      childrenMap[name] = children.map(c=>({name:c.name, qty:Math.max(1,parseInt(c.qty??1,10))}));
-      for(const c of children){ if(!parentMap[c.name]) parentMap[c.name] = new Set(); parentMap[c.name].add(name); if(!childrenMap[c.name]) visit(c.name); }
-    };
-    visit(rootProduct); return {childrenMap, parentMap};
-  }
-  function getAllDescendants(name, childrenMap){ const out = [], stack = [name]; while(stack.length){ const cur = stack.pop(); const ch = childrenMap[cur]||[]; for(const c of ch){ out.push(c.name); stack.push(c.name); } } return out; }
-  function areAllChildrenChecked(name, checkedMap, childrenMap){ const ch = childrenMap[name]||[]; if(ch.length===0) return true; return ch.every(c => checkedMap[c.name]); }
-
-  function renderNeedPanel(){
-    const box=document.getElementById('needBox'); box.innerHTML=''; const sel=AppState.selectedProduct;
-    if(AppState.selectedPlayerId==null){
-      const empty=document.createElement('div'); empty.className='empty-state';
-      const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='👤';
-      const msg=document.createElement('div'); msg.className='msg'; msg.textContent='캐릭터를 선택해 주세요';
-      empty.append(emoji, msg);
-      box.appendChild(empty);
-      return;
+    return out;
+  };
+  const areAllChildrenCheckedById=(id,map)=>{
+    const kids = ctx.childrenById[id]||[]; if(kids.length===0) return true;
+    return kids.every(kid => !!map[kid]);
+  };
+  const toggleById=(nodeId, value)=>{
+    const pid = AppState.selectedPlayerId ?? '__noPlayer__';
+    const prod = AppState.selectedProduct?.name ?? '';
+    setChecked(pid, prod, nodeId, value);
+    // 하위 전파(같은 가지 내부만)
+    for(const d of getAllDescendantIds(nodeId)) setChecked(pid, prod, d, value);
+    // 상위로 수집/해제 전파
+    let parent = ctx.parentById[nodeId];
+    while(parent){
+      if(value){
+        const all = areAllChildrenCheckedById(parent, getCheckedMap(pid, prod));
+        if(all) setChecked(pid, prod, parent, true);
+      }else{
+        setChecked(pid, prod, parent, false);
+      }
+      parent = ctx.parentById[parent];
     }
-    updateNeedTitleChip(); if(!sel){
-      const empty=document.createElement('div'); empty.className='empty-state';
-      const emoji=document.createElement('span'); emoji.className='emoji'; emoji.textContent='📦';
-      const msg=document.createElement('div'); msg.className='msg'; msg.textContent='제품을 선택해 주세요';
-      empty.append(emoji, msg);
-      box.appendChild(empty);
-      return; }
-    const ctx = buildTreeContext(sel.name); AppState.currentTree = ctx;
-    const list=document.createElement('div'); list.className='list need-static';
-    const mats=RecipeMap[sel.name]||[]; if(!mats.length){ const p=document.createElement('p'); p.className='small-note'; p.textContent='레시피가 없습니다. (RECIPES 배열을 추가하세요)'; box.appendChild(p); return; }
-    const playerId = AppState.selectedPlayerId; const product = sel.name; const checkedMap = getCheckedMap(playerId??'__noPlayer__', product);
-    const toggleWithPropagation = (nodeName, value)=>{
-      const {childrenMap, parentMap} = AppState.currentTree; const pid = AppState.selectedPlayerId ?? '__noPlayer__'; const prod = AppState.selectedProduct?.name ?? '';
-      setChecked(pid, prod, nodeName, value); const desc = getAllDescendants(nodeName, childrenMap); for(const d of desc) setChecked(pid, prod, d, value);
-      const queue = [...(parentMap[nodeName]??[])];
-      while(queue.length){ const parent = queue.shift(); if(value){ const all = areAllChildrenChecked(parent, getCheckedMap(pid, prod), childrenMap); if(all){ setChecked(pid, prod, parent, true); } } else { setChecked(pid, prod, parent, false); } for(const pp of (parentMap[parent]??[])) queue.push(pp); }
-      renderNeedPanel();
-    };
-    const renderNode=(nodeName,perEach,multiplier,depth)=>{
-      const total=perEach*multiplier; const card=document.createElement('div'); card.className='card'; card.dataset.material=nodeName; card.style.marginLeft=`${Math.min(depth,6)*24}px`; if(checkedMap[nodeName]) card.classList.add('checked');
-      const checkbox = document.createElement('input'); checkbox.type='checkbox'; checkbox.checked = !!checkedMap[nodeName]; checkbox.addEventListener('change',()=>toggleWithPropagation(nodeName, checkbox.checked));
-      const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(nodeName)+'.png'; img.alt=nodeName; const info=document.createElement('span'); info.className='info'; info.textContent=nodeName; const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`총 ${total}`;
-      card.append(checkbox,img,info,badge); list.appendChild(card);
-      const children=RecipeMap[nodeName]; if(children&&children.length){ for(const c of children){ renderNode(c.name, Math.max(1,parseInt(c.qty??1,10)), total, depth+1); } }
-    };
-    const qty = Math.max(0, parseInt(sel.qty ?? 0, 10)); for(const m of mats){ renderNode(m.name, Math.max(1,parseInt(m.qty??1,10)), qty, 0); }
-    box.appendChild(list);
+    renderNeedPanel();
+  };
+
+  const renderNode=(nodeName,perEach,multiplier,depth,parentId,slotIdx)=>{
+    const id = parentId ? `${parentId}/${slotIdx}:${nodeName}` : `root/${slotIdx}:${nodeName}`;
+    if(parentId){
+      ctx.parentById[id]=parentId;
+      if(!ctx.childrenById[parentId]) ctx.childrenById[parentId]=[];
+      ctx.childrenById[parentId].push(id);
+    }
+    const total=perEach*multiplier;
+    const card=document.createElement('div');
+    card.className='card'; card.dataset.material=nodeName;
+    card.style.marginLeft=`${Math.min(depth,6)*24}px`;
+    if(checkedMap[id]) card.classList.add('checked');
+
+    const checkbox=document.createElement('input');
+    checkbox.type='checkbox'; checkbox.checked=!!checkedMap[id];
+    checkbox.addEventListener('change',()=>toggleById(id, checkbox.checked));
+
+    const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(nodeName)+'.png'; img.alt=nodeName;
+    const info=document.createElement('span'); info.className='info'; info.textContent=nodeName;
+    const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`총 ${total}`;
+
+    card.append(checkbox,img,info,badge); list.appendChild(card);
+
+    const children=RecipeMap[nodeName];
+    if(children&&children.length){
+      for(let i=0;i<children.length;i++){
+        const c=children[i];
+        renderNode(c.name, Math.max(1,parseInt(c.qty??1,10)), total, depth+1, id, i);
+      }
+    }
+  };
+
+  const qty = Math.max(0, parseInt(sel.qty ?? 0, 10));
+  for(let i=0;i<mats.length;i++){
+    const m=mats[i];
+    renderNode(m.name, Math.max(1,parseInt(m.qty??1,10)), qty, 0, null, i);
   }
+  box.appendChild(list);
+}
 
-  /* ===== 접이식 UI 상태 ===== */
-  window.UIState = { showPlayers:false, showProducts:false };
-  function setPanelCollapsedById(id, collapsed){ const el=document.getElementById(id); if(el) el.classList.toggle('collapsed', !!collapsed); }
+/* ===== 접이식 UI 상태 ===== */
+window.UIState = { showPlayers:false, showProducts:false };
+function setPanelCollapsedById(id, collapsed){ const el=document.getElementById(id); if(el) el.classList.toggle('collapsed', !!collapsed); }
 
-  /* ===== 초기화 ===== */
-  window.addEventListener('DOMContentLoaded', ()=>{
-    loadAll(); loadProducts(); renderPlayers();
-    setPanelCollapsedById('playerPanel', true); setPanelCollapsedById('productPanel', true);
-    updatePlayerTitle(); updateProductTitle();
-    if(AppState.selectedPlayerId!=null) selectPlayer(AppState.selectedPlayerId); else { renderSelectedInTitle(); renderNeedPanel(); }
-    const input=document.getElementById('player-name'); const addBtn=document.querySelector('.btn');
-    addBtn.addEventListener('click',()=>{ addPlayer(input.value); input.value=''; input.focus(); });
-    input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ addPlayer(input.value); input.value=''; } });
-  });
+/* ===== 초기화 ===== */
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadAll(); loadProducts(); renderPlayers();
+  setPanelCollapsedById('playerPanel', true); setPanelCollapsedById('productPanel', true);
+  updatePlayerTitle(); updateProductTitle();
+  if(AppState.selectedPlayerId!=null) selectPlayer(AppState.selectedPlayerId); else { renderSelectedInTitle(); renderNeedPanel(); }
+  const input=document.getElementById('player-name'); const addBtn=document.querySelector('.btn');
+  addBtn.addEventListener('click',()=>{ addPlayer(input.value); input.value=''; input.focus(); });
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ addPlayer(input.value); input.value=''; } });
+});
 </script>
+
+  
 </body>
 </html>
