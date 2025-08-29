@@ -146,13 +146,13 @@
 </footer>
   <script>
   /* ===== 데이터 ===== */
-  const PRODUCTS = [
+  const PRODUCTS = [  
   "연마의 인챈트 스톤","강인의 인챈트 스톤","시크릿 더스트 인챈트 스톤",
+  "무기 강화 금속 Ⅲ","방어구 강화 금속 Ⅲ","액세서리 강화 금속 Ⅲ",
   "STR 보석 II","AGI 보석 II","INT 보석 II","VIT 보석 II","LUK 보석 II","DEX 보석 II",
   "액세서리 축복의 돌 I","방어구 축복의 돌 I","무기 축복의 돌 I",
   "액세서리 보호석 I","방어구 보호석 I","무기 보호석 I",
   "액세서리 기도석","방어구 기도석","무기 기도석",
-  
 ];
 
 const RECIPES = [
@@ -162,24 +162,34 @@ const RECIPES = [
   { product:"VIT 보석 II", materials:[ {name:"혼돈의 보석 광석 Lv.2",qty:30},{name:"채찍 물고기",qty:12} ] },
   { product:"LUK 보석 II", materials:[ {name:"순수한 보석 광석 Lv.2",qty:30},{name:"톱니 비늘 물고기",qty:12} ] },
   { product:"DEX 보석 II", materials:[ {name:"혼돈의 보석 광석 Lv.2",qty:30},{name:"무지개 산호",qty:12} ] },
+
   { product:"액세서리 축복의 돌 I", materials:[ {name:"축복받은 광석 Lv.1",qty:7},{name:"메이플 피쉬",qty:6} ] },
   { product:"방어구 축복의 돌 I",   materials:[ {name:"축복받은 광석 Lv.1",qty:7},{name:"탄사어",qty:6} ] },
   { product:"무기 축복의 돌 I",     materials:[ {name:"축복받은 광석 Lv.1",qty:7},{name:"비단 해파리",qty:6} ] },
+
   { product:"액세서리 보호석 I", materials:[ {name:"순수한 보석 광석 Lv.1",qty:36},{name:"혼돈의 보석 광석 Lv.1",qty:36} ] },
   { product:"방어구 보호석 I",   materials:[ {name:"축복받은 광석 Lv.1",qty:6},{name:"혼돈의 보석 광석 Lv.1",qty:41} ] },
   { product:"무기 보호석 I",     materials:[ {name:"축복받은 광석 Lv.1",qty:6},{name:"순수한 보석 광석 Lv.1",qty:41} ] },
+
   { product:"액세서리 기도석", materials:[ {name:"액세서리 보호석 I",qty:1},{name:"액세서리 축복의 돌 I",qty:1},{name:"달빛의 보석 광석",qty:1},{name:"어린 장수경",qty:1} ] },
   { product:"방어구 기도석",   materials:[ {name:"방어구 보호석 I",qty:1},{name:"방어구 축복의 돌 I",qty:1},{name:"별빛의 보석 광석",qty:1},{name:"은린어",qty:1} ] },
   { product:"무기 기도석",     materials:[ {name:"무기 보호석 I",qty:1},{name:"무기 축복의 돌 I",qty:1},{name:"태양의 보석 광석",qty:1},{name:"홍메치",qty:1} ] },
+
   { product:"메이플 피쉬", materials:[ {name:"안내초",qty:1} ] },
   { product:"탄사어", materials:[ {name:"바위 버섯",qty:1} ] },
   { product:"비단 해파리", materials:[ {name:"부근초",qty:1} ] },
 
-  // 🔽 새로 추가된 인챈트 스톤 3종
+  // 🔽 인챈트 스톤 3종
   { product:"연마의 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"수정 버섯",qty:2} ] },
   { product:"강인의 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"질긴 덩굴",qty:2} ] },
-  { product:"시크릿 더스트 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"비밀의 꽃",qty:2} ] }
+  { product:"시크릿 더스트 인챈트 스톤", materials:[ {name:"무스펠리움 Lv.1",qty:15},{name:"비밀의 꽃",qty:2} ] },
+
+  // 🔽 강화 금속 Ⅲ 3종
+  { product:"무기 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"나비 가리비",qty:3} ] },
+  { product:"방어구 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"흰 날개 조개",qty:3} ] },
+  { product:"액세서리 강화 금속 Ⅲ", materials:[ {name:"강화 금속 Lv.3",qty:12},{name:"에너지 조개",qty:3} ] }
 ];
+
 
 
   const DEFAULT_QTY = {};
