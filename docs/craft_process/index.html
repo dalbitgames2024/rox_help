@@ -9,7 +9,7 @@
       --bg:#f5f7fb; --panel:#ffffff; --border:#e5e7eb; --text:#111827;
       --muted:#6b7280; --title:#0f172a; --radius:12px;
       --shadow:0 2px 10px rgba(0,0,0,.06); --gap:16px; --side-w:260px; --mid-w: 560px;
-      --blue:#2563eb; --red:#e11d48; --sel-ring: rgba(59,130,246,.18);
+      --blue:#2563eb; --sel-ring: rgba(59,130,246,.18);
       --icon:28px; --container-w:500px;
     }
     *{box-sizing:border-box}
@@ -57,12 +57,12 @@
     .card:hover{background:#f3f4f6;border-color:#d1d5db;}
     .card img{width:var(--icon);height:var(--icon);object-fit:contain;flex-shrink:0;}
     .card .info{font-size:12px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;}
-    .badge{display:inline-block;padding:2px 6px;border-radius:6px;border:1px solid #d1d5db;background:#fff;font-size:11px;color:#334155}
+    .badge{display:inline-block;padding:2px 6px;border-radius:6px;border:1px solid #d1d5db;background:#fff;font-size:12px;color:#334155;font-weight:700;margin-left:auto;} /* legacy */
 
     .card.selected{ border-color:#93c5fd; box-shadow:0 0 0 3px var(--sel-ring); background:#eef6ff; }
 
-    .card.checked .info{ color:#9aa3af; text-decoration:line-through; }
-    .card.checked{ background:#f1f5f9; border-color:#d1d5db; opacity:.85; }
+    .card.checked .info{ color:#94a3b8; text-decoration:line-through; opacity:.35; }
+    .card.checked{ background:#f1f5f9; border-color:#d1d5db; }
 
     .chip{display:flex; align-items:center; gap:8px; padding:4px 8px;
       border:1px solid var(--border); border-radius:8px; background:#f9fafb;white-space:nowrap;}
@@ -77,28 +77,45 @@
     .qty-field[readonly]{ background:#f8fafc; cursor:text; }
     .qty-field:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px var(--sel-ring); }
 
+    /* 보유 수량 입력 (legacy) */
+    .own-field{width:64px;height:26px;padding:0 6px;font-size:13px;border:1px solid var(--border) !important;border-radius:6px;background:#fff;outline:none;}
+    .own-wrap{display:flex;align-items:center;gap:6px;margin-left:0;}
+    .own-label{font-size:12px;color:#334155 !important;}
+
+    /* 새 배지형 표시 */
+    .pill-group{display:flex;align-items:center;gap:6px;margin-left:auto;}
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px;color:#334155;font-weight:700;}
+    .pill input{width:10ch;height:22px;padding:0 6px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:12px;color:#334155;outline:none;text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;}
+    .pill .num{min-width:5ch;text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;}
+
     .muted{color:#6b7280}
     .small-note{font-size:12px;color:#6b7280;white-space:nowrap;}
 
     .need-static .card{cursor:default;}
     .need-static .card:hover{background:#f9fafb;border-color:var(--border);}
     /* 제품(완제품) 카드만 더 작게 - 폭 절약 */
-  .grid .card{ gap:6px; padding:4px 6px; }
-  .grid .card img{ width:24px; height:24px; }
-  .grid .card .info{ font-size:11px; }
-  .panel.collapsed{min-height:auto;}
-  .panel.collapsed .panel__body, .panel.collapsed .panel__footer{display:none;}
-  .btn-link{border:none;background:transparent;color:var(--blue);font-weight:700;cursor:pointer;padding:0 6px;height:28px;}
-  .chip-mini{display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;white-space:nowrap;} .chip-mini img{width:18px;height:18px;object-fit:contain;flex-shrink:0;}
-  /* ===== Footer (제작자 표시) ===== */
-  .app-footer{max-width:var(--container-w);margin:8px auto 24px;padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;color:#475569;font-size:12px;text-align:center;}
-  .credit-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);background:#fff;border-radius:9999px;font-weight:700;color:#334155;}
-  #needPanel .panel__title{display:none;}
-  /* 미선택 안내: 심플 버전 */
-  .empty-state{display:flex;align-items:center;gap:10px;padding:8px 0;}
-  .empty-state .emoji{font-size:18px;}
-  .empty-state .msg{font-size:18px;font-weight:800;color:#0f172a;}
-</style>
+    .grid .card{ gap:6px; padding:4px 6px; }
+    .grid .card img{ width:24px; height:24px; }
+    .grid .card .info{ font-size:11px; }
+    .panel.collapsed{min-height:auto;}
+    .panel.collapsed .panel__body, .panel.collapsed .panel__footer{display:none;}
+    .btn-link{border:none;background:transparent;color:var(--blue);font-weight:700;cursor:pointer;padding:0 6px;height:28px;}
+    .chip-mini{display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;white-space:nowrap;} .chip-mini img{width:18px;height:18px;object-fit:contain;flex-shrink:0;}
+    /* ===== Footer (제작자 표시) ===== */
+    .app-footer{max-width:var(--container-w);margin:8px auto 24px;padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;color:#475569;font-size:12px;text-align:center;}
+    .credit-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);background:#fff;border-radius:9999px;font-weight:700;color:#334155;}
+    #needPanel .panel__title{display:none;}
+    /* 미선택 안내: 심플 버전 */
+    .empty-state{display:flex;align-items:center;gap:10px;padding:8px 0;}
+    .empty-state .emoji{font-size:18px;}
+    .empty-state .msg{font-size:18px;font-weight:800;color:#0f172a;}
+
+    /* 체크 항목 더 흐리게 */
+    .card.checked img{ filter: grayscale(1) brightness(.95); opacity:.5; }
+    .card.checked .pill > span,
+    .card.checked .pill .num,
+    .card.checked .pill input{ color:#94a3b8 !important; opacity:.35; }
+  </style>
 </head>
 <body>
   <header class="app-header">CRAFT INFO</header>
@@ -200,19 +217,21 @@ const RecipeMap = Object.fromEntries(RECIPES.map(r=>[r.product,r.materials]));
 /* ===== 상태/스토리지 ===== */
 window.AppState={
   players:[],nextId:1,selectedPlayerId:null,selectedProduct:null,
-  playerSelections:{},playerProductQty:{},playerChecked:{},currentTree:null
+  playerSelections:{},playerProductQty:{},playerChecked:{},playerOwned:{},currentTree:null
 };
 const KEY_PLAYERS='craftinfo.players';
 const KEY_LAST_PLAYER='craftinfo.lastPlayerId';
 const KEY_PLAYER_SELECTIONS='craftinfo.playerSelections';
 const KEY_PLAYER_PRODUCT_QTY='craftinfo.playerProductQty';
 const KEY_PLAYER_CHECKED='craftinfo.playerChecked';
+const KEY_PLAYER_OWNED='craftinfo.playerOwned';
 
 const savePlayers=()=>localStorage.setItem(KEY_PLAYERS,JSON.stringify(AppState.players));
 const saveLastPlayer=()=>localStorage.setItem(KEY_LAST_PLAYER,JSON.stringify(AppState.selectedPlayerId));
 const savePlayerSelections=()=>localStorage.setItem(KEY_PLAYER_SELECTIONS,JSON.stringify(AppState.playerSelections));
 const savePlayerProductQty=()=>localStorage.setItem(KEY_PLAYER_PRODUCT_QTY,JSON.stringify(AppState.playerProductQty));
 const savePlayerChecked=()=>localStorage.setItem(KEY_PLAYER_CHECKED,JSON.stringify(AppState.playerChecked));
+const savePlayerOwned=()=>localStorage.setItem(KEY_PLAYER_OWNED,JSON.stringify(AppState.playerOwned));
 
 function loadAll(){try{
   AppState.players=JSON.parse(localStorage.getItem(KEY_PLAYERS)??'[]');
@@ -222,6 +241,7 @@ function loadAll(){try{
   AppState.playerSelections=JSON.parse(localStorage.getItem(KEY_PLAYER_SELECTIONS)??'{}')||{};
   AppState.playerProductQty=JSON.parse(localStorage.getItem(KEY_PLAYER_PRODUCT_QTY)??'{}')||{};
   AppState.playerChecked=JSON.parse(localStorage.getItem(KEY_PLAYER_CHECKED)??'{}')||{};
+  AppState.playerOwned=JSON.parse(localStorage.getItem(KEY_PLAYER_OWNED)??'{}')||{};
 }catch(e){console.warn('로드 실패',e)}}
 
 function getQtyForPlayerProduct(playerId,productName){
@@ -232,7 +252,7 @@ function getQtyForPlayerProduct(playerId,productName){
 }
 function setQtyForPlayerProduct(playerId,productName,qty){
   if(playerId==null) return;
-  if(!AppState.playerProductQty[playerId]) AppState.playerProductQty[playerId]={};
+  if(!AppState.playerProductQty[playerId]) AppState.playerProductQty[playerId] = {};
   AppState.playerProductQty[playerId][productName]=Math.max(0,parseInt(qty??1,10)||1);
   savePlayerProductQty();
 }
@@ -246,6 +266,19 @@ function setChecked(playerId, product, nodeId, value){
   const map = getCheckedMap(playerId, product);
   if(value) map[nodeId] = true; else delete map[nodeId];
   savePlayerChecked();
+}
+
+// 보유수량 저장소
+function getOwnedMap(playerId, product){
+  if(!AppState.playerOwned[playerId]) AppState.playerOwned[playerId] = {};
+  if(!AppState.playerOwned[playerId][product]) AppState.playerOwned[playerId][product] = {};
+  return AppState.playerOwned[playerId][product];
+}
+function setOwned(playerId, product, nodeId, value){
+  const map = getOwnedMap(playerId, product);
+  const v = Math.max(0, parseInt(value||0,10) || 0);
+  if(v>0) map[nodeId] = v; else delete map[nodeId];
+  savePlayerOwned();
 }
 
 /* ===== 플레이어 ===== */
@@ -271,8 +304,8 @@ function addPlayer(name){
 }
 function removePlayer(id){
   AppState.players=AppState.players.filter(p=>p.id!==id);
-  delete AppState.playerSelections[id]; delete AppState.playerProductQty[id]; delete AppState.playerChecked[id];
-  savePlayers(); savePlayerSelections(); savePlayerProductQty(); savePlayerChecked();
+  delete AppState.playerSelections[id]; delete AppState.playerProductQty[id]; delete AppState.playerChecked[id]; delete AppState.playerOwned[id];
+  savePlayers(); savePlayerSelections(); savePlayerProductQty(); savePlayerChecked(); savePlayerOwned();
   if(AppState.selectedPlayerId===id){ AppState.selectedPlayerId=null; saveLastPlayer(); AppState.selectedProduct=null; renderNeedPanel(); loadProducts(); }
   renderPlayers();
 }
@@ -342,7 +375,7 @@ function updateProductTitle(){
     const nm=document.createElement('span'); nm.className='name'; nm.textContent=name;
     const qtyWrap=document.createElement('div'); qtyWrap.className='qty-wrap';
     const label=document.createElement('span'); label.className='qty-label'; label.textContent='수량';
-    const input=document.createElement('input'); input.type='number'; input.min='0'; input.step='1';
+    const input=document.createElement('input'); input.type='text'; input.setAttribute('inputmode','numeric'); input.setAttribute('pattern','[0-9]*');
     const initialQty = (AppState.selectedProduct?.qty ?? (AppState.selectedPlayerId!=null? getQtyForPlayerProduct(AppState.selectedPlayerId, name):1)) || 1;
     input.value=String(initialQty); input.className='qty-field'; input.readOnly=true;
     const startEdit = ()=>{ input.readOnly=false; input.focus(); input.select(); };
@@ -380,7 +413,7 @@ function updateProductTitle(){
   }
 }
 
-/* ===== 필요재료 패널 (경로기반 ID로 체크 독립화) ===== */
+/* ===== 필요재료 패널 (경로기반 ID로 체크 & 보유수량) ===== */
 function renderNeedPanel(){
   const box=document.getElementById('needBox'); box.innerHTML='';
   const sel=AppState.selectedProduct;
@@ -407,9 +440,10 @@ function renderNeedPanel(){
   const playerId = AppState.selectedPlayerId;
   const product  = sel.name;
   const checkedMap = getCheckedMap(playerId??'__noPlayer__', product);
+  const ownedMap = getOwnedMap(playerId??'__noPlayer__', product);
 
   // 경로기반 인스턴스 트리 컨텍스트
-  const ctx = { childrenById:{}, parentById:{} };
+  const ctx = { childrenById:{}, parentById:{}, reqById:{} };
 
   const getAllDescendantIds = (startId)=>{
     const out=[]; const stack=[startId];
@@ -434,43 +468,99 @@ function renderNeedPanel(){
     while(parent){
       if(value){
         const all = areAllChildrenCheckedById(parent, getCheckedMap(pid, prod));
-        if(all) setChecked(pid, prod, parent, true);
+        if(all){ setChecked(pid, prod, parent, true); }
       }else{
         setChecked(pid, prod, parent, false);
       }
       parent = ctx.parentById[parent];
     }
+    // 소유 수량은 자동 변경하지 않음
     renderNeedPanel();
   };
 
-  const renderNode=(nodeName,perEach,multiplier,depth,parentId,slotIdx)=>{
+  // 보유 입력 핸들러
+  const commitOwned=(nodeId, input)=>{
+    const pid = AppState.selectedPlayerId ?? '__noPlayer__';
+    const prod = AppState.selectedProduct?.name ?? '';
+    setOwned(pid, prod, nodeId, input.value);
+    renderNeedPanel();
+  };
+
+  const renderNode=(nodeName,perEach,multiplier,depth,parentId,slotIdx,ancestorDone=false)=>{
     const id = parentId ? `${parentId}/${slotIdx}:${nodeName}` : `root/${slotIdx}:${nodeName}`;
     if(parentId){
       ctx.parentById[id]=parentId;
       if(!ctx.childrenById[parentId]) ctx.childrenById[parentId]=[];
       ctx.childrenById[parentId].push(id);
     }
-    const total=perEach*multiplier;
+    const totalRequired = perEach*multiplier; // 상위 계산 결과
+    ctx.reqById[id] = totalRequired;
+    const savedOwned = Math.max(0, parseInt(ownedMap[id] ?? 0, 10) || 0);
+
+    // 이 노드의 완료 여부 (상위 완료 또는 본인 보유로 완료)
+    const checkedHere = !!checkedMap[id];
+    const shouldCheck = !!(ancestorDone || checkedHere);
+
+    const displayOwned = savedOwned; // 상위 완료여도 자동 0 처리하지 않음
+    const need = Math.max(0, totalRequired - displayOwned);
+
     const card=document.createElement('div');
-    card.className='card'; card.dataset.material=nodeName;
+    card.className='card'; card.dataset.material=nodeName; card.dataset.nodeId=id;
     card.style.marginLeft=`${Math.min(depth,6)*24}px`;
-    if(checkedMap[id]) card.classList.add('checked');
 
     const checkbox=document.createElement('input');
-    checkbox.type='checkbox'; checkbox.checked=!!checkedMap[id];
+    checkbox.type='checkbox';
+    checkbox.checked = shouldCheck;
+    card.classList.toggle('checked', checkbox.checked);
     checkbox.addEventListener('change',()=>toggleById(id, checkbox.checked));
 
     const img=document.createElement('img'); img.src='./icon/'+encodeURIComponent(nodeName)+'.png'; img.alt=nodeName;
     const info=document.createElement('span'); info.className='info'; info.textContent=nodeName;
-    const badge=document.createElement('span'); badge.className='badge'; badge.textContent=`총 ${total}`;
 
-    card.append(checkbox,img,info,badge); list.appendChild(card);
+    // [보유][필요] 배지 그룹
+    const pills=document.createElement('div'); pills.className='pill-group';
+
+    
+
+    const pillOwn=document.createElement('label'); pillOwn.className='pill';
+    const ownText=document.createElement('span'); ownText.textContent='보유';
+    const ownInput=document.createElement('input'); ownInput.type='text'; ownInput.setAttribute('inputmode','numeric'); ownInput.setAttribute('pattern','[0-9]*'); ownInput.classList.add('num'); ownInput.value=String(displayOwned); ownInput.setAttribute('data-node-id', id);
+    ownInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); ownInput.blur(); }});
+    ownInput.addEventListener('input',()=>{
+      const live = Math.max(0, parseInt(ownInput.value||'0',10) || 0);
+      // 현재 노드 보유 즉시 저장
+      setOwned(playerId, product, id, live);
+      // 현재 행 즉시 표시 업데이트
+      needNum.textContent = String(Math.max(0, totalRequired - live));
+      // 하위 필요 재계산을 위해 전체 갱신, 포커스 복원 (체크 상태는 변경하지 않음)
+      const keepId = id;
+      const caret = (ownInput.selectionStart||0);
+      renderNeedPanel();
+      setTimeout(()=>{
+        const el = document.querySelector(`input[data-node-id="${keepId}"]`);
+        if(el){ el.focus(); const pos = Math.min(caret, (el.value||'').length); el.setSelectionRange(pos,pos); }
+      },0);
+    });
+    ownInput.addEventListener('blur',()=>commitOwned(id, ownInput));
+    pillOwn.append(ownText, ownInput);
+
+    const pillNeed=document.createElement('span'); pillNeed.className='pill';
+    const needText=document.createElement('span'); needText.textContent='필요';
+    const needNum=document.createElement('span'); needNum.className='num'; needNum.textContent=String(need);
+    pillNeed.append(needText, needNum);
+
+    pills.append(pillOwn,pillNeed);
+
+    // 순서: 체크박스, 아이콘, 이름, [보유][필요]
+    card.append(checkbox,img,info,pills); list.appendChild(card);
 
     const children=RecipeMap[nodeName];
     if(children&&children.length){
+      // 하위에 내려줄 multiplier는 "차감된 필요량"
+      const childMultiplier = need; // 상위 보유가 늘면 하위 필요가 즉시 줄도록 차감된 필요량을 multiplier로 사용
       for(let i=0;i<children.length;i++){
         const c=children[i];
-        renderNode(c.name, Math.max(1,parseInt(c.qty??1,10)), total, depth+1, id, i);
+        renderNode(c.name, Math.max(1,parseInt(c.qty??1,10)), childMultiplier, depth+1, id, i, shouldCheck);
       }
     }
   };
@@ -478,7 +568,7 @@ function renderNeedPanel(){
   const qty = Math.max(0, parseInt(sel.qty ?? 0, 10));
   for(let i=0;i<mats.length;i++){
     const m=mats[i];
-    renderNode(m.name, Math.max(1,parseInt(m.qty??1,10)), qty, 0, null, i);
+    renderNode(m.name, Math.max(1,parseInt(m.qty??1,10)), qty, 0, null, i, false);
   }
   box.appendChild(list);
 }
@@ -498,7 +588,5 @@ window.addEventListener('DOMContentLoaded', ()=>{
   input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ addPlayer(input.value); input.value=''; } });
 });
 </script>
-
-  
 </body>
 </html>
